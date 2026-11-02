@@ -1,0 +1,31 @@
+# Configurações não sensíveis do ambiente de desenvolvimento.
+# Segredos (DATABASE_URL) vêm só do ambiente ou do .env.
+# Qualquer chave aqui pode ser sobrescrita por WB_<CHAVE> no ambiente.
+
+api_base_url = "https://api.worldbank.org/v2"
+request_timeout = 30.0
+per_page = 1000
+max_retries = 5
+source_id = 2           # WDI (World Development Indicators)
+start_year = 2000
+end_year = 2024
+log_level = "DEBUG"
+
+# Códigos a confirmar via /v2/indicator/{id} na Fase 2.
+indicators = [
+    "SP.POP.TOTL",           # População total
+    "SP.URB.TOTL.IN.ZS",     # População urbana (% do total)
+    "SP.DYN.LE00.IN",        # Expectativa de vida ao nascer
+    "NY.GDP.MKTP.CD",        # PIB (US$ correntes)
+    "NY.GDP.PCAP.CD",        # PIB per capita (US$ correntes)
+    "NY.GDP.MKTP.KD.ZG",     # Crescimento do PIB (% anual)
+    "FP.CPI.TOTL.ZG",        # Inflação, preços ao consumidor (% anual)
+    "SL.UEM.TOTL.ZS",        # Desemprego (% da força de trabalho)
+    "SI.POV.DDAY",           # Pobreza extrema (% da população)
+    "SI.POV.GINI",           # Índice de Gini
+    "SE.ADT.LITR.ZS",        # Alfabetização de adultos (%)
+    "SH.XPD.CHEX.GD.ZS",     # Gasto corrente em saúde (% do PIB)
+    "EG.ELC.ACCS.ZS",        # Acesso à eletricidade (% da população)
+    "IT.NET.USER.ZS",        # Usuários de internet (% da população)
+    "EN.GHG.CO2.PC.CE.AR5",  # CO2 per capita (substitui EN.ATM.CO2E.PC)
+]

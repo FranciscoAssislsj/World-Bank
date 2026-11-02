@@ -1,0 +1,29 @@
+# Configurações não sensíveis do ambiente de produção.
+# Mesmas chaves de dev.toml; muda o nível de log e o timeout.
+
+api_base_url = "https://api.worldbank.org/v2"
+request_timeout = 60.0
+per_page = 1000
+max_retries = 5
+source_id = 2
+start_year = 2000
+end_year = 2024
+log_level = "INFO"
+
+indicators = [
+    "SP.POP.TOTL",
+    "SP.URB.TOTL.IN.ZS",
+    "SP.DYN.LE00.IN",
+    "NY.GDP.MKTP.CD",
+    "NY.GDP.PCAP.CD",
+    "NY.GDP.MKTP.KD.ZG",
+    "FP.CPI.TOTL.ZG",
+    "SL.UEM.TOTL.ZS",
+    "SI.POV.DDAY",
+    "SI.POV.GINI",
+    "SE.ADT.LITR.ZS",
+    "SH.XPD.CHEX.GD.ZS",
+    "EG.ELC.ACCS.ZS",
+    "IT.NET.USER.ZS",
+    "EN.GHG.CO2.PC.CE.AR5",
+]
