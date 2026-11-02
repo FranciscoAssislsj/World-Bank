@@ -1,9 +1,13 @@
 """Fixtures compartilhadas: isolam os testes do ambiente e do .env da máquina."""
 
+import json
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import pytest
 
+FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 FAKE_DATABASE_URL = "postgresql://fake_user:fake_pass@localhost:5432/fake_db"
 
 
@@ -20,6 +24,16 @@ def isolated_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
 def fake_database_url() -> str:
     """URL inventada que o ``isolated_env`` coloca em ``DATABASE_URL``."""
     return FAKE_DATABASE_URL
+
+
+@pytest.fixture
+def load_fixture() -> Callable[[str], Any]:
+    """Lê um JSON inventado de ``tests/fixtures/``."""
+
+    def _load(name: str) -> Any:
+        return json.loads((FIXTURES_DIR / name).read_text(encoding="utf-8"))
+
+    return _load
 
 
 @pytest.fixture

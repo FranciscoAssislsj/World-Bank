@@ -25,6 +25,13 @@ class ApiResponseError(WorldBankError):
         return f"{base} (code={self.code})" if self.code else base
 
 
+class TransientApiError(ApiResponseError):
+    """Erro temporário da API (HTTP 5xx, falha de rede ou códigos 105/199).
+
+    É o único tipo de erro que o cliente tenta de novo.
+    """
+
+
 class SchemaValidationError(WorldBankError):
     """Dados que não respeitam o esquema ou as regras de qualidade esperadas."""
 
