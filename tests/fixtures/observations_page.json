@@ -1,0 +1,32 @@
+[
+  {
+    "page": 1,
+    "pages": 1,
+    "per_page": "50",
+    "total": 2,
+    "sourceid": "2",
+    "lastupdated": "2026-01-15"
+  },
+  [
+    {
+      "indicator": {"id": "SP.POP.TOTL", "value": "Population, total"},
+      "country": {"id": "XA", "value": "Terra Inventada"},
+      "countryiso3code": "XAA",
+      "date": "2023",
+      "value": 1234567,
+      "unit": "",
+      "obs_status": "",
+      "decimal": 0
+    },
+    {
+      "indicator": {"id": "SP.POP.TOTL", "value": "Population, total"},
+      "country": {"id": "XA", "value": "Terra Inventada"},
+      "countryiso3code": "XAA",
+      "date": "2022",
+      "value": null,
+      "unit": "",
+      "obs_status": "",
+      "decimal": 0
+    }
+  ]
+]
