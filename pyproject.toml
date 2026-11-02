@@ -1,0 +1,90 @@
+[project]
+name = "world-bank"
+version = "0.1.0"
+description = "Pipeline de dados da World Bank Indicators API v2 para PostgreSQL em arquitetura medalhão (bronze, silver, gold)"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "httpx>=0.28.1",
+    "pandas>=3.1.0",
+    "psycopg[binary]>=3.3.6",
+    "pydantic>=2.14.2",
+    "pydantic-settings>=2.16.2",
+    "tenacity>=9.2.1",
+]
+
+[project.scripts]
+world-bank = "world_bank.__main__:main"
+
+[build-system]
+requires = ["uv_build>=0.9,<1"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 88
+target-version = "py314"
+src = ["src", "tests"]
+extend-exclude = [".venv", "build", "dist", "site", "data"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort (organização de imports)
+    "N",        # pep8-naming
+    "UP",       # pyupgrade
+    "B",        # flake8-bugbear
+    "SIM",      # flake8-simplify
+    "C4",       # flake8-comprehensions
+    "PTH",      # usar pathlib em vez de os.path
+    "S",        # flake8-bandit (segurança)
+    "RUF",      # regras específicas do ruff
+]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]  # assert é permitido em testes
+
+[tool.ruff.lint.isort]
+known-first-party = ["world_bank"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "--strict-markers",
+    "-m", "not integration",
+    "--cov=world_bank",
+    "--cov-report=term-missing",
+    "--cov-fail-under=70",
+]
+markers = [
+    "integration: testes que acessam serviços reais (excluídos por padrão)",
+]
+
+[tool.coverage.run]
+source = ["src/world_bank"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+exclude_also = [
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+[dependency-groups]
+dev = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.8.0",
+    "pytest>=9.2.0",
+    "pytest-cov>=7.1.0",
+    "pytest-mock>=3.17.0",
+    "respx>=0.23.1",
+    "ruff>=0.17.3",
+]
