@@ -7,6 +7,8 @@ from typing import Any
 
 import pytest
 
+from world_bank.extract.client import ApiPage
+
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 FAKE_DATABASE_URL = "postgresql://fake_user:fake_pass@localhost:5432/fake_db"
 
@@ -34,6 +36,33 @@ def load_fixture() -> Callable[[str], Any]:
         return json.loads((FIXTURES_DIR / name).read_text(encoding="utf-8"))
 
     return _load
+
+
+@pytest.fixture
+def make_api_page() -> Callable[..., ApiPage]:
+    """Monta uma ``ApiPage`` inventada, como o cliente devolveria."""
+
+    def _make(
+        path: str = "country",
+        records: list[dict[str, Any]] | None = None,
+        page: int = 1,
+        pages: int = 1,
+        params: dict[str, str] | None = None,
+    ) -> ApiPage:
+        records = [{"id": "XAA"}] if records is None else records
+        metadata = {"page": page, "pages": pages, "total": len(records) * pages}
+        return ApiPage(
+            path=path,
+            params={**(params or {}), "format": "json", "page": str(page)},
+            page=page,
+            pages=pages,
+            total=metadata["total"],
+            payload=[metadata, records],
+            metadata=metadata,
+            records=records,
+        )
+
+    return _make
 
 
 @pytest.fixture

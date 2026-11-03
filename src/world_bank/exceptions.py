@@ -38,3 +38,7 @@ class SchemaValidationError(WorldBankError):
 
 class LoadError(WorldBankError):
     """Falha ao persistir dados no banco."""
+
+
+class MigrationError(LoadError):
+    """Migração com nome inválido, duplicada ou alterada depois de aplicada."""

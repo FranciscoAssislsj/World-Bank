@@ -15,9 +15,19 @@ Pré-requisitos: [pyenv](https://github.com/pyenv-win/pyenv-win) com Python 3.14
 ```bash
 uv sync                      # cria a .venv e instala as dependências do uv.lock
 cp .env.example .env         # depois, ajuste os valores locais
-docker compose up -d         # sobe o PostgreSQL 17
-uv run python -m world_bank  # CLI do pipeline
+docker compose up -d --wait  # sobe o PostgreSQL 17 em localhost:5433
+uv run python -m world_bank migrate      # cria os schemas e as tabelas
+uv run python -m world_bank load-bronze  # grava as respostas da API em bronze.api_response
 ```
+
+O banco fica na porta **5433** do computador, e não na 5432, para não conflitar com um PostgreSQL já instalado.
+
+`load-bronze` aceita `--start` e `--end` para mudar o período das observações (padrão: 2000–2024). Rodar de novo só grava as requisições cujo conteúdo mudou na API ([D-010](docs/data-decisions.md)).
+
+| Tabela | Uma linha é |
+|---|---|
+| `bronze.api_response` | uma página de resposta da API, com o JSON original em `payload` |
+| `etl.schema_migrations` | uma migração de `sql/migrations/` já aplicada |
 
 ## Testes e qualidade
 
