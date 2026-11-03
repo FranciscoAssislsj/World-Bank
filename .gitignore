@@ -21,3 +21,4 @@ data/
 # Material pessoal de trabalho (não faz parte do projeto)
 .claude/
 specs/
+.mcp.json
