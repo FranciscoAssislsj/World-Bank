@@ -213,6 +213,21 @@ Uma linha = uma execução de um comando do pipeline (D-046).
 | `started_at` | data e hora | `timestamp with time zone` | não |  | Início da execução. |
 | `finished_at` | data e hora | `timestamp with time zone` | sim |  | Fim da execução; NULL enquanto roda. |
 
+### `etl.quality_check`
+
+Uma linha = o resultado de uma regra de qualidade em uma execução (D-054).
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `check_id` | número inteiro | `bigint` | não | PK | Identificador da linha. |
+| `run_id` | identificador único | `uuid` | não | FK → `pipeline_run.run_id` | Execução que rodou a regra. |
+| `check_name` | texto | `text` | não |  | Nome do arquivo em sql/quality/, sem .sql. |
+| `severity` | texto | `text` | não |  | error bloqueia; warning só registra (D-051). |
+| `passed` | verdadeiro/falso | `boolean` | não |  | true quando não há linhas com problema. |
+| `rows_failed` | número inteiro | `integer` | não |  | Linhas com problema. |
+| `sample` | JSON | `jsonb` | não |  | Até 5 exemplos das linhas com problema. |
+| `checked_at` | data e hora | `timestamp with time zone` | não |  | Quando o resultado foi gravado. |
+
 ### `etl.schema_migrations`
 
 Uma linha = uma migração de sql/migrations/ já aplicada.

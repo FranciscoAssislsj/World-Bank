@@ -1,7 +1,8 @@
 """Pipeline das observações: lê a bronze, transforma e grava o fato da silver.
 
 Não chama a API. Cada execução fica registrada em ``etl.pipeline_run``, inclusive
-as que falham (D-046), e é pulada se a bronze não mudou desde a última (D-045).
+as que falham (D-046), e é pulada se a bronze não mudou desde a última (D-045). As
+regras de qualidade do fato rodam antes de confirmar a gravação (D-050).
 """
 
 import logging
@@ -18,6 +19,7 @@ from world_bank.load.postgres import (
     BronzeLoad,
     country_codes,
     finish_pipeline_run,
+    insert_quality_results,
     last_successful_bronze_runs,
     read_observation_load,
     start_pipeline_run,
@@ -25,6 +27,13 @@ from world_bank.load.postgres import (
 )
 from world_bank.transform.dimensions import ensure_unique
 from world_bank.transform.observations import KEY_COLUMNS, transform_observations
+from world_bank.validate.checks import (
+    CheckResult,
+    check_params,
+    load_checks,
+    raise_for_errors,
+    run_checks,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -122,12 +131,14 @@ def run_observations(
     Raises:
         SchemaValidationError: Se faltar dado na bronze ou um registro não
             respeitar as regras. Nada é gravado no fato.
+        QualityCheckError: Se uma regra de erro não passar. Nada é gravado no fato.
         LoadError: Se o banco recusar a operação. Nada é gravado no fato.
     """
     period = f"{start_year}:{end_year}"
     params = {"period": period, "indicators": settings.indicators}
     run_id = start_pipeline_run(conn, PIPELINE, params)
     bronze_run_ids: list[UUID] = []
+    results: list[CheckResult] = []
     try:
         loads = read_loads(conn, settings.indicators, period)
         bronze_run_ids = [load.run_id for load in loads]
@@ -137,8 +148,12 @@ def run_observations(
             logger.info("observations skipped", extra={"period": period})
             return ObservationsResult("skipped", None, None)
         rows = build_rows(loads, country_codes(conn), settings.indicators)
+        checks = load_checks("fato")
+        check_values = check_params(settings.indicators, start_year, end_year)
         with conn.transaction():
             written = upsert_rows(conn, _TABLE, KEY_COLUMNS, rows)
+            results = run_checks(conn, checks, check_values)
+            raise_for_errors(results)
     except psycopg.Error as exc:
         error = LoadError(f"falha ao carregar as observações: {exc}")
         finish_pipeline_run(
@@ -146,10 +161,12 @@ def run_observations(
         )
         raise error from exc
     except WorldBankError as exc:
+        insert_quality_results(conn, run_id, results)
         finish_pipeline_run(
             conn, run_id, "failed", bronze_run_ids, error_message=str(exc)
         )
         raise
+    insert_quality_results(conn, run_id, results)
     finish_pipeline_run(
         conn,
         run_id,

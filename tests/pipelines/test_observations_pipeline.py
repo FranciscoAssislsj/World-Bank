@@ -6,9 +6,10 @@ import psycopg
 import pytest
 from pytest_mock import MockerFixture
 
-from world_bank.exceptions import LoadError, SchemaValidationError
+from world_bank.exceptions import LoadError, QualityCheckError, SchemaValidationError
 from world_bank.load.postgres import BronzeLoad
 from world_bank.pipelines.observations import build_rows, read_loads, run_observations
+from world_bank.validate.checks import CheckResult
 
 MODULE = "world_bank.pipelines.observations"
 ENDPOINT = "country/all/indicator/AA.BB"
@@ -41,6 +42,16 @@ def db(mocker: MockerFixture) -> dict[str, MagicMock]:
         "start": mocker.patch(f"{MODULE}.start_pipeline_run", return_value="exec"),
         "finish": mocker.patch(f"{MODULE}.finish_pipeline_run"),
         "upsert": mocker.patch(f"{MODULE}.upsert_rows", return_value=1),
+    }
+
+
+@pytest.fixture(autouse=True)
+def quality(mocker: MockerFixture) -> dict[str, MagicMock]:
+    """Substitui as regras de qualidade: por padrão, nenhuma reprova."""
+    return {
+        "load": mocker.patch(f"{MODULE}.load_checks", return_value=["regra"]),
+        "run": mocker.patch(f"{MODULE}.run_checks", return_value=[]),
+        "insert": mocker.patch(f"{MODULE}.insert_quality_results"),
     }
 
 
@@ -153,3 +164,57 @@ def test_database_error_becomes_load_error_and_records_failure(
     args = db["finish"].call_args
     assert args.args[2] == "failed"
     assert "chave inexistente" in args.kwargs["error_message"]
+
+
+def test_rules_run_after_writing_inside_the_transaction(
+    db: dict[str, MagicMock], quality: dict[str, MagicMock]
+) -> None:
+    order = MagicMock()
+    conn = order.conn
+    order.attach_mock(db["upsert"], "upsert")
+    order.attach_mock(quality["run"], "run")
+
+    run_observations(conn, _settings(), 2000, 2024)
+
+    quality["load"].assert_called_once_with("fato")
+    names = [call[0] for call in order.mock_calls]
+    assert names.index("conn.transaction") < names.index("upsert")
+    assert names.index("upsert") < names.index("run")
+    assert names.index("run") < names.index("conn.transaction().__exit__")
+
+
+def test_warnings_do_not_block_and_are_recorded(
+    db: dict[str, MagicMock], quality: dict[str, MagicMock]
+) -> None:
+    warning = CheckResult("regra", "warning", False, 2, [])
+    quality["run"].return_value = [warning]
+    conn = MagicMock()
+
+    assert run_observations(conn, _settings(), 2000, 2024).status == "success"
+
+    quality["insert"].assert_called_once_with(conn, "exec", [warning])
+    assert db["finish"].call_args.args[2] == "success"
+
+
+def test_error_rule_fails_and_results_stay_recorded(
+    db: dict[str, MagicMock], quality: dict[str, MagicMock]
+) -> None:
+    error = CheckResult("faixa", "error", False, 1, [])
+    quality["run"].return_value = [error]
+    conn = MagicMock()
+
+    with pytest.raises(QualityCheckError, match="faixa"):
+        run_observations(conn, _settings(), 2000, 2024)
+
+    quality["insert"].assert_called_once_with(conn, "exec", [error])
+    assert db["finish"].call_args.args[2] == "failed"
+
+
+def test_skipped_run_does_not_run_rules(
+    db: dict[str, MagicMock], quality: dict[str, MagicMock]
+) -> None:
+    db["last"].return_value = [RUN_ID]
+
+    run_observations(MagicMock(), _settings(), 2000, 2024)
+
+    quality["run"].assert_not_called()

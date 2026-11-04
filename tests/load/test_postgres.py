@@ -25,6 +25,7 @@ from world_bank.load.postgres import (
     delete_missing_links,
     finish_pipeline_run,
     insert_pages,
+    insert_quality_results,
     insert_source_file,
     json_hash,
     last_successful_bronze_runs,
@@ -477,3 +478,27 @@ def test_last_successful_bronze_runs_returns_none_without_history() -> None:
     conn.execute.return_value.fetchone.return_value = None
 
     assert last_successful_bronze_runs(conn, "cmd", {}) is None
+
+
+def test_insert_quality_results_stores_each_rule() -> None:
+    conn = MagicMock()
+    run_id = uuid4()
+    result = MagicMock(
+        severity="warning", passed=False, rows_failed=3, sample=[{"a": 1}]
+    )
+    result.name = "cobertura"
+
+    insert_quality_results(conn, run_id, [result])
+
+    cursor = conn.cursor.return_value.__enter__.return_value
+    rows = cursor.executemany.call_args.args[1]
+    assert rows[0][:5] == (run_id, "cobertura", "warning", False, 3)
+    assert rows[0][5].obj == [{"a": 1}]
+
+
+def test_insert_quality_results_skips_empty_list() -> None:
+    conn = MagicMock()
+
+    insert_quality_results(conn, uuid4(), [])
+
+    conn.cursor.assert_not_called()

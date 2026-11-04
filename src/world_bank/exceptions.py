@@ -40,6 +40,10 @@ class SchemaValidationError(WorldBankError):
     """Dados que não respeitam o esquema ou as regras de qualidade esperadas."""
 
 
+class QualityCheckError(WorldBankError):
+    """Uma regra de qualidade de severidade ``error`` não passou."""
+
+
 class LoadError(WorldBankError):
     """Falha ao persistir dados no banco."""
 

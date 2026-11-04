@@ -20,6 +20,7 @@ uv run python -m world_bank migrate      # cria os schemas e as tabelas
 uv run python -m world_bank load-bronze  # grava na bronze as respostas da API e o histórico de renda
 uv run python -m world_bank load-dimensions  # grava os cadastros da silver a partir da bronze
 uv run python -m world_bank load-observations  # grava os valores dos indicadores na silver
+uv run python -m world_bank validate  # inspeciona a qualidade da silver
 ```
 
 O banco fica na porta **5433** do computador, e não na 5432, para não conflitar com um PostgreSQL já instalado.
@@ -41,6 +42,7 @@ O banco fica na porta **5433** do computador, e não na 5432, para não conflita
 | `silver.ponte_indicador_topico` | a ligação entre um indicador e um tema |
 | `silver.fato_observacao` | o valor de um indicador para um país ou agregado em um ano |
 | `etl.pipeline_run` | uma execução de um comando do pipeline |
+| `etl.quality_check` | o resultado de uma regra de qualidade em uma execução |
 | `etl.schema_migrations` | uma migração de `sql/migrations/` já aplicada |
 
 ## Modelo de dados
@@ -50,6 +52,17 @@ O banco fica na porta **5433** do computador, e não na 5432, para não conflita
 `fato_observacao` guarda os valores e liga países e indicadores. Ao somar, filtre `dim_pais.e_agregado`, para não contar países e agregados juntos. Para a renda de um país em um ano, use `classificacao_renda_anual`.
 
 As colunas de cada tabela, com tipo de valor e descrição, estão no [dicionário de dados](docs/dicionario-dados.md).
+
+## Qualidade dos dados
+
+Cada regra é um arquivo em `sql/quality/`. **Erro** é o que não pode ser verdade, como um percentual acima de 100: a carga é desfeita e nada é publicado. **Aviso** é o que pode ser real e merece atenção: fica registrado em `etl.quality_check`.
+
+Os valores da fonte nunca são alterados ([D-052](docs/data-decisions.md)). Ao usar os dados, considere os avisos atuais:
+
+- **Valores improváveis (29):** por exemplo, a expectativa de vida da República Centro-Africana cai de 49,9 em 2008 para 14,7 em 2009 e volta a 46,9 em 2010, e o CO₂ per capita de Palau chega a 202,9.
+- **Pouca cobertura (76 pares de indicador e ano):** alfabetização, pobreza, Gini e gastos com saúde têm valor em menos da metade dos países em alguns anos, inclusive em 2024.
+- **Sem classificação de renda (129 pares de país e ano).**
+- **Agregado sem nenhum valor (1):** `Not classified`.
 
 ## Testes e qualidade
 
