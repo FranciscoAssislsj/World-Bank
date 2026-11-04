@@ -12,6 +12,7 @@ from world_bank.pipelines.bronze import run_bronze
 from world_bank.pipelines.dimensions import run_dimensions
 from world_bank.pipelines.observations import run_observations
 from world_bank.pipelines.source_files import run_source_files
+from world_bank.pipelines.validate import run_validate
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--full-refresh",
         action="store_true",
         help="processa de novo mesmo que a bronze não tenha mudado",
+    )
+    validate = commands.add_parser(
+        "validate", help="inspeciona a silver com as regras de sql/quality/"
+    )
+    validate.add_argument(
+        "--start", type=int, help="primeiro ano inspecionado (padrão: config)"
+    )
+    validate.add_argument(
+        "--end", type=int, help="último ano inspecionado (padrão: config)"
     )
     return parser
 
@@ -132,6 +142,25 @@ def run_load_observations(
         )
 
 
+def run_validate_command(
+    settings: Settings, start_year: int | None, end_year: int | None
+) -> None:
+    """Roda as regras de qualidade na silver.
+
+    Args:
+        settings: Configurações (banco, indicadores e período).
+        start_year: Primeiro ano; ``None`` usa ``settings.start_year``.
+        end_year: Último ano; ``None`` usa ``settings.end_year``.
+    """
+    with connect(settings) as conn:
+        run_validate(
+            conn,
+            settings,
+            start_year or settings.start_year,
+            end_year or settings.end_year,
+        )
+
+
 def main(argv: list[str] | None = None) -> int:
     """Executa a CLI.
 
@@ -160,6 +189,8 @@ def main(argv: list[str] | None = None) -> int:
             run_load_dimensions(settings)
         elif args.command == "load-observations":
             run_load_observations(settings, args.start, args.end, args.full_refresh)
+        elif args.command == "validate":
+            run_validate_command(settings, args.start, args.end)
     except WorldBankError:
         logger.exception("command failed", extra={"command": args.command})
         return 1

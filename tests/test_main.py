@@ -4,7 +4,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from world_bank.__main__ import main
-from world_bank.exceptions import LoadError
+from world_bank.exceptions import LoadError, QualityCheckError
 
 
 def test_main_without_command_prints_help(capsys: pytest.CaptureFixture[str]) -> None:
@@ -151,3 +151,39 @@ def test_main_load_observations_returns_1_when_load_fails(
     )
 
     assert main(["load-observations"]) == 1
+
+
+def test_main_validate_uses_config_years_by_default(mocker: MockerFixture) -> None:
+    settings = _settings(mocker)
+    settings.start_year, settings.end_year = 2000, 2024
+    mocker.patch("world_bank.__main__.load_settings", return_value=settings)
+    fake_connect = mocker.patch("world_bank.__main__.connect")
+    fake_run = mocker.patch("world_bank.__main__.run_validate", return_value=[])
+
+    assert main(["validate"]) == 0
+
+    conn = fake_connect.return_value.__enter__.return_value
+    fake_run.assert_called_once_with(conn, settings, 2000, 2024)
+
+
+def test_main_validate_passes_period(mocker: MockerFixture) -> None:
+    settings = _settings(mocker)
+    mocker.patch("world_bank.__main__.load_settings", return_value=settings)
+    fake_connect = mocker.patch("world_bank.__main__.connect")
+    fake_run = mocker.patch("world_bank.__main__.run_validate", return_value=[])
+
+    assert main(["validate", "--start", "2010", "--end", "2015"]) == 0
+
+    conn = fake_connect.return_value.__enter__.return_value
+    fake_run.assert_called_once_with(conn, settings, 2010, 2015)
+
+
+def test_main_validate_returns_1_when_error_rule_fails(mocker: MockerFixture) -> None:
+    mocker.patch("world_bank.__main__.load_settings", return_value=_settings(mocker))
+    mocker.patch("world_bank.__main__.connect")
+    mocker.patch(
+        "world_bank.__main__.run_validate",
+        side_effect=QualityCheckError("faixa_percentual (1)"),
+    )
+
+    assert main(["validate"]) == 1

@@ -59,3 +59,13 @@ Validação executada pela IA: `ruff format` e `ruff check` passaram, o `pytest`
 | A spec esperava 5 agregados de renda na conferência. São 7: os 5 eram só os que vêm sem ISO3, e `LMY` e `MIC` também são de renda. | A consulta de conferência devolveu 7 linhas. | O esperado da spec foi corrigido. Todos têm 375 observações. |
 
 Validação executada pela IA: `ruff format` e `ruff check` passaram, o `pytest` deu **235 passed** com cobertura de **99,43%**, e o `pytest -m integration` deu **16 passed**, sem deixar linhas de teste no banco. O `load-observations` gravou 99.750 linhas; a 2ª execução foi pulada, e o `--full-refresh` leu 99.750 e gravou 0. A soma dos valores e a comparação linha a linha com a bronze deram 0 diferenças, a bronze continuou com 121 páginas, e o `EXPLAIN` mostrou o uso do índice `(indicador_id, ano)`.
+
+## Fase 5 — Validação e qualidade
+
+| O que a IA assumiu ou errou | Como foi descoberto | Correção |
+|---|---|---|
+| O plano previa modelos pydantic para os registros da API, sem considerar que a transformação já confere cada campo. | Comparação entre o plano e o código das Fases 3 e 4, ao escrever a spec. | Os modelos não foram criados (D-055). |
+| O plano validava antes de gravar, o que impede comparar o dado novo com as outras tabelas e com a bronze. | Ao listar as regras: completude e divergência com a bronze precisam do dado já gravado. | O dado é gravado e inspecionado na mesma transação, e um erro desfaz tudo (D-050). |
+| A primeira versão da spec previa só o período como parâmetro das regras. Se a lista de indicadores mudasse, um indicador retirado geraria falso erro de completude, e uma carga antiga geraria falsa divergência. | Revisão das consultas ao escrevê-las. | As regras recebem também os indicadores e os endpoints configurados. |
+
+Validação executada pela IA: `ruff format` e `ruff check` passaram, o `pytest` deu **266 passed** com cobertura de **99%**, e o `pytest -m integration` deu **27 passed**, incluindo dado ruim plantado para cada regra de erro e um valor impossível que não chegou a ser publicado, sem deixar linhas no banco. Na primeira execução do `validate`, as 8 regras de erro passaram; os avisos foram `cobertura_baixa` 76, `valor_atipico` 29, `pais_ano_sem_renda` 129 e `entidade_sem_valor` 1. O fato continuou com 99.750 linhas, e a bronze, com 121 páginas.

@@ -451,6 +451,43 @@ def delete_missing_links(
     return cursor.rowcount
 
 
+def insert_quality_results(
+    conn: psycopg.Connection, run_id: UUID, results: Sequence[Any]
+) -> None:
+    """Grava os resultados das regras em ``etl.quality_check`` (D-054).
+
+    Roda fora da transação da carga, para o resultado de uma carga reprovada não
+    se perder.
+
+    Args:
+        conn: Conexão em modo autocommit.
+        run_id: Execução que rodou as regras.
+        results: Resultados, com ``name``, ``severity``, ``passed``,
+            ``rows_failed`` e ``sample``.
+    """
+    if not results:
+        return
+    with conn.transaction(), conn.cursor() as cursor:
+        cursor.executemany(
+            """
+            insert into etl.quality_check (
+                run_id, check_name, severity, passed, rows_failed, sample
+            ) values (%s, %s, %s, %s, %s, %s)
+            """,
+            [
+                (
+                    run_id,
+                    result.name,
+                    result.severity,
+                    result.passed,
+                    result.rows_failed,
+                    Jsonb(result.sample),
+                )
+                for result in results
+            ],
+        )
+
+
 def _identifiers(names: Sequence[str]) -> sql.Composed:
     return sql.SQL(", ").join(map(sql.Identifier, names))
 
