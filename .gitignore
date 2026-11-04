@@ -11,6 +11,8 @@ wheels/
 
 # Segredos e artefatos locais
 .env
+.env.*
+!.env.example
 .coverage
 htmlcov/
 .pytest_cache/

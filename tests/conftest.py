@@ -1,11 +1,13 @@
 """Fixtures compartilhadas: isolam os testes do ambiente e do .env da máquina."""
 
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
 import pytest
+from openpyxl import Workbook
 
 from world_bank.extract.client import ApiPage
 
@@ -75,3 +77,31 @@ def config_dir(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     return directory
+
+
+@pytest.fixture
+def make_income_workbook() -> Callable[..., bytes]:
+    """Monta um Excel inventado, no formato do histórico oficial de renda."""
+
+    def _make(
+        rows: Sequence[Sequence[Any]],
+        fiscal: Sequence[str] = ("FY26", "FY27"),
+        years: Sequence[int] = (2024, 2025),
+        sheet: str = "Country Analytical History",
+        with_header: bool = True,
+    ) -> bytes:
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.title = sheet
+        worksheet.append([None, "Classificações"])
+        if with_header:
+            worksheet.append([None, "Bank's fiscal year:", *fiscal])
+            worksheet.append([None, "Data for calendar year :", *years])
+            worksheet.append([None, "Low income (L)", "<= 1", "<= 2"])
+        for row in rows:
+            worksheet.append(list(row))
+        buffer = BytesIO()
+        workbook.save(buffer)
+        return buffer.getvalue()
+
+    return _make

@@ -1,4 +1,4 @@
-"""Acesso ao PostgreSQL: conexão, migrações versionadas e gravação na bronze.
+"""Acesso ao PostgreSQL: conexão, migrações, gravação na bronze e upsert na silver.
 
 As migrações são arquivos ``sql/migrations/NNN_nome.sql`` aplicados em ordem.
 Cada uma aplicada fica registrada em ``etl.schema_migrations`` com o checksum
@@ -9,12 +9,14 @@ import hashlib
 import json
 import logging
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from uuid import UUID
 
 import psycopg
+from psycopg import sql
 from psycopg.types.json import Jsonb
 
 from world_bank.config import Settings
@@ -26,6 +28,9 @@ logger = logging.getLogger(__name__)
 MIGRATIONS_DIR = Path(__file__).resolve().parents[3] / "sql" / "migrations"
 
 _MIGRATION_NAME = re.compile(r"^(?P<version>\d{3})_[a-z0-9_]+\.sql$")
+
+# Linhagem (D-033): não conta como mudança de valor no upsert.
+_LINEAGE_COLUMN = "bronze_run_id"
 
 # Criada aqui, e não numa migração, porque o migrate precisa dela para saber
 # quais migrações já rodaram.
@@ -55,6 +60,38 @@ class Migration:
     filename: str
     sql: str
     checksum: str
+
+
+@dataclass(frozen=True)
+class BronzeLoad:
+    """A carga mais recente de um endpoint na bronze.
+
+    Attributes:
+        endpoint: Caminho do endpoint (ex.: ``"country"``).
+        run_id: Execução que gravou a carga.
+        records: Registros de todas as páginas, na ordem.
+    """
+
+    endpoint: str
+    run_id: UUID
+    records: list[dict[str, Any]]
+
+
+@dataclass(frozen=True)
+class SourceFile:
+    """Um arquivo baixado fora da API e guardado na bronze.
+
+    Attributes:
+        source: Identificador do arquivo (ex.: ``"income_history"``).
+        run_id: Execução que gravou o arquivo.
+        content: Bytes do arquivo.
+        content_hash: SHA-256 do conteúdo.
+    """
+
+    source: str
+    run_id: UUID
+    content: bytes
+    content_hash: str
 
 
 def connect(settings: Settings) -> psycopg.Connection:
@@ -280,3 +317,218 @@ def insert_pages(conn: psycopg.Connection, run_id: UUID, pages: list[ApiPage]) -
             """,
             rows,
         )
+
+
+def read_latest_load(conn: psycopg.Connection, endpoint: str) -> BronzeLoad | None:
+    """Lê os registros da carga mais recente de um endpoint (D-013).
+
+    Todas as páginas de uma carga têm o mesmo ``ingested_at``, porque são
+    gravadas na mesma transação (D-011).
+
+    Args:
+        conn: Conexão com o banco.
+        endpoint: Caminho do endpoint (ex.: ``"country"``).
+
+    Returns:
+        A carga, ou ``None`` se o endpoint nunca foi gravado.
+    """
+    rows = conn.execute(
+        """
+        select run_id, payload -> 1
+        from bronze.api_response
+        where endpoint = %(endpoint)s
+          and ingested_at = (
+              select max(ingested_at) from bronze.api_response
+              where endpoint = %(endpoint)s
+          )
+        order by page
+        """,
+        {"endpoint": endpoint},
+    ).fetchall()
+    if not rows:
+        return None
+    records = [record for _, page_records in rows for record in page_records or []]
+    return BronzeLoad(endpoint, rows[0][0], records)
+
+
+def upsert_rows(
+    conn: psycopg.Connection,
+    table: str,
+    key_columns: Sequence[str],
+    rows: list[dict[str, Any]],
+) -> int:
+    """Insere ou atualiza linhas em ``silver.<table>`` (D-029).
+
+    As linhas passam por uma tabela temporária com ``COPY`` e entram na definitiva
+    com ``ON CONFLICT``. Uma linha existente só é regravada quando alguma coluna de
+    dado mudou; ``bronze_run_id`` não conta como mudança (D-033). Nomes de tabela e
+    de coluna entram como identificadores do SQL, nunca como texto concatenado.
+
+    Args:
+        conn: Conexão com o banco, dentro de uma transação.
+        table: Nome da tabela no schema ``silver``.
+        key_columns: Colunas da chave primária.
+        rows: Linhas com as mesmas chaves em todos os dicionários.
+
+    Returns:
+        Número de linhas inseridas ou alteradas.
+    """
+    if not rows:
+        return 0
+    columns = list(rows[0])
+    value_columns = [column for column in columns if column not in key_columns]
+    data_columns = [column for column in value_columns if column != _LINEAGE_COLUMN]
+    target = sql.Identifier("silver", table)
+    staging = sql.Identifier(f"stg_{table}")
+    column_list = _identifiers(columns)
+
+    with conn.cursor() as cursor:
+        cursor.execute(
+            sql.SQL(
+                "create temp table {staging} (like {target} including defaults)"
+                " on commit drop"
+            ).format(staging=staging, target=target)
+        )
+        copy_sql = sql.SQL("copy {staging} ({columns}) from stdin").format(
+            staging=staging, columns=column_list
+        )
+        with cursor.copy(copy_sql) as copy:
+            for row in rows:
+                copy.write_row([row[column] for column in columns])
+        cursor.execute(
+            sql.SQL(
+                "insert into {target} as alvo ({columns})"
+                " select {columns} from {staging} on conflict ({keys}) {action}"
+            ).format(
+                target=target,
+                columns=column_list,
+                staging=staging,
+                keys=_identifiers(key_columns),
+                action=_conflict_action(value_columns, data_columns),
+            )
+        )
+        written = cursor.rowcount
+        cursor.execute(sql.SQL("drop table {staging}").format(staging=staging))
+    return written
+
+
+def delete_missing_links(
+    conn: psycopg.Connection,
+    indicator_ids: Sequence[str],
+    links: Sequence[tuple[str, int]],
+) -> int:
+    """Apaga da ponte as ligações que sumiram da fonte (D-030).
+
+    Só olha os indicadores informados. As ligações que continuam na fonte não são
+    tocadas, então mantêm o ``atualizado_em``.
+
+    Args:
+        conn: Conexão com o banco, dentro de uma transação.
+        indicator_ids: Indicadores carregados.
+        links: Pares ``(indicador_id, topico_id)`` que existem na fonte.
+
+    Returns:
+        Número de ligações apagadas.
+    """
+    cursor = conn.execute(
+        """
+        delete from silver.ponte_indicador_topico as alvo
+        where alvo.indicador_id = any(%(indicators)s)
+          and not exists (
+              select 1
+              from unnest(%(link_indicators)s::text[], %(link_topics)s::int[])
+                  as fonte (indicador_id, topico_id)
+              where fonte.indicador_id = alvo.indicador_id
+                and fonte.topico_id = alvo.topico_id
+          )
+        """,
+        {
+            "indicators": list(indicator_ids),
+            "link_indicators": [indicator for indicator, _ in links],
+            "link_topics": [topic for _, topic in links],
+        },
+    )
+    return cursor.rowcount
+
+
+def _identifiers(names: Sequence[str]) -> sql.Composed:
+    return sql.SQL(", ").join(map(sql.Identifier, names))
+
+
+def _conflict_action(
+    value_columns: Sequence[str], data_columns: Sequence[str]
+) -> sql.Composable:
+    """Monta o que fazer com uma chave que já existe na tabela."""
+    if not data_columns:
+        return sql.SQL("do nothing")
+    assignments = [
+        sql.SQL("{column} = excluded.{column}").format(column=sql.Identifier(column))
+        for column in value_columns
+    ]
+    assignments.append(sql.SQL("atualizado_em = now()"))
+    return sql.SQL(
+        "do update set {assignments} where ({old}) is distinct from ({new})"
+    ).format(
+        assignments=sql.SQL(", ").join(assignments),
+        old=sql.SQL(", ").join(sql.Identifier("alvo", c) for c in data_columns),
+        new=sql.SQL(", ").join(sql.Identifier("excluded", c) for c in data_columns),
+    )
+
+
+def content_hash(content: bytes) -> str:
+    """Calcula o SHA-256 dos bytes de um arquivo.
+
+    Args:
+        content: Conteúdo do arquivo.
+
+    Returns:
+        Hash em hexadecimal.
+    """
+    return hashlib.sha256(content).hexdigest()
+
+
+def latest_source_file(conn: psycopg.Connection, source: str) -> SourceFile | None:
+    """Lê a versão mais recente de um arquivo guardado na bronze.
+
+    Args:
+        conn: Conexão com o banco.
+        source: Identificador do arquivo.
+
+    Returns:
+        O arquivo, ou ``None`` se nunca foi gravado.
+    """
+    row = conn.execute(
+        """
+        select run_id, content, content_hash
+        from bronze.source_file
+        where source = %s
+        order by ingested_at desc, file_id desc
+        limit 1
+        """,
+        (source,),
+    ).fetchone()
+    if row is None:
+        return None
+    return SourceFile(source, row[0], bytes(row[1]), row[2])
+
+
+def insert_source_file(
+    conn: psycopg.Connection, run_id: UUID, source: str, url: str, content: bytes
+) -> None:
+    """Grava uma versão de um arquivo em ``bronze.source_file`` (D-036).
+
+    Args:
+        conn: Conexão com o banco.
+        run_id: Identificador da execução do pipeline.
+        source: Identificador do arquivo.
+        url: Endereço de onde o arquivo foi baixado.
+        content: Bytes do arquivo, sem alteração.
+    """
+    conn.execute(
+        """
+        insert into bronze.source_file (
+            run_id, source, url, content, content_hash, size_bytes
+        ) values (%s, %s, %s, %s, %s, %s)
+        """,
+        (run_id, source, url, content, content_hash(content), len(content)),
+    )

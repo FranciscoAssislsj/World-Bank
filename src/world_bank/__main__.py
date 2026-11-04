@@ -9,6 +9,8 @@ from world_bank.extract.client import WorldBankClient
 from world_bank.load.postgres import apply_migrations, connect, list_migrations
 from world_bank.logging_config import configure_logging
 from world_bank.pipelines.bronze import run_bronze
+from world_bank.pipelines.dimensions import run_dimensions
+from world_bank.pipelines.source_files import run_source_files
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +30,16 @@ def build_parser() -> argparse.ArgumentParser:
         "migrate", help="aplica as migrações pendentes de sql/migrations/"
     )
     load_bronze = commands.add_parser(
-        "load-bronze", help="grava em bronze.api_response as respostas da API"
+        "load-bronze", help="grava na bronze as respostas da API e o histórico de renda"
     )
     load_bronze.add_argument(
         "--start", type=int, help="primeiro ano das observações (padrão: config)"
     )
     load_bronze.add_argument(
         "--end", type=int, help="último ano das observações (padrão: config)"
+    )
+    commands.add_parser(
+        "load-dimensions", help="grava as dimensões da silver a partir da bronze"
     )
     return parser
 
@@ -75,6 +80,17 @@ def run_load_bronze(
             start_year or settings.start_year,
             end_year or settings.end_year,
         )
+        run_source_files(conn, settings)
+
+
+def run_load_dimensions(settings: Settings) -> None:
+    """Lê os cadastros da bronze e grava as dimensões da silver.
+
+    Args:
+        settings: Configurações (banco e indicadores).
+    """
+    with connect(settings) as conn:
+        run_dimensions(conn, settings)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -101,6 +117,8 @@ def main(argv: list[str] | None = None) -> int:
             run_migrate(settings)
         elif args.command == "load-bronze":
             run_load_bronze(settings, args.start, args.end)
+        elif args.command == "load-dimensions":
+            run_load_dimensions(settings)
     except WorldBankError:
         logger.exception("command failed", extra={"command": args.command})
         return 1
