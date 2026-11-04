@@ -15,7 +15,7 @@ Pré-requisitos: [pyenv](https://github.com/pyenv-win/pyenv-win) com Python 3.14
 ```bash
 uv sync                      # cria a .venv e instala as dependências do uv.lock
 cp .env.example .env         # depois, ajuste os valores locais
-docker compose up -d --wait  # sobe o PostgreSQL 17 em localhost:5433
+docker compose up -d --wait  # sobe o PostgreSQL 17 em 127.0.0.1:5433
 uv run python -m world_bank migrate      # cria os schemas e as tabelas
 uv run python -m world_bank load-bronze  # grava as respostas da API em bronze.api_response
 ```

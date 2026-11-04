@@ -57,6 +57,7 @@ def test_main_load_bronze_uses_config_years_by_default(mocker: MockerFixture) ->
     mocker.patch("world_bank.__main__.load_settings", return_value=settings)
     mocker.patch("world_bank.__main__.WorldBankClient")
     mocker.patch("world_bank.__main__.connect")
+    mocker.patch("world_bank.__main__.run_source_files")
     fake_run = mocker.patch("world_bank.__main__.run_bronze", return_value=[])
 
     assert main(["load-bronze"]) == 0
@@ -66,8 +67,47 @@ def test_main_load_bronze_uses_config_years_by_default(mocker: MockerFixture) ->
 def test_main_load_bronze_accepts_year_range(mocker: MockerFixture) -> None:
     mocker.patch("world_bank.__main__.load_settings", return_value=_settings(mocker))
     mocker.patch("world_bank.__main__.WorldBankClient")
+    mocker.patch("world_bank.__main__.run_source_files")
     mocker.patch("world_bank.__main__.connect")
     fake_run = mocker.patch("world_bank.__main__.run_bronze", return_value=[])
 
     assert main(["load-bronze", "--start", "2010", "--end", "2015"]) == 0
     assert fake_run.call_args.args[3:] == (2010, 2015)
+
+
+def test_main_load_dimensions_runs_pipeline(mocker: MockerFixture) -> None:
+    settings = _settings(mocker)
+    mocker.patch("world_bank.__main__.load_settings", return_value=settings)
+    fake_connect = mocker.patch("world_bank.__main__.connect")
+    fake_run = mocker.patch("world_bank.__main__.run_dimensions", return_value=[])
+
+    exit_code = main(["load-dimensions"])
+
+    assert exit_code == 0
+    conn = fake_connect.return_value.__enter__.return_value
+    fake_run.assert_called_once_with(conn, settings)
+
+
+def test_main_load_dimensions_returns_1_when_load_fails(mocker: MockerFixture) -> None:
+    mocker.patch("world_bank.__main__.load_settings", return_value=_settings(mocker))
+    mocker.patch("world_bank.__main__.connect")
+    mocker.patch(
+        "world_bank.__main__.run_dimensions", side_effect=LoadError("chave inválida")
+    )
+
+    assert main(["load-dimensions"]) == 1
+
+
+def test_main_load_bronze_also_stores_income_history(mocker: MockerFixture) -> None:
+    settings = _settings(mocker)
+    settings.start_year, settings.end_year = 2000, 2024
+    mocker.patch("world_bank.__main__.load_settings", return_value=settings)
+    mocker.patch("world_bank.__main__.WorldBankClient")
+    fake_connect = mocker.patch("world_bank.__main__.connect")
+    mocker.patch("world_bank.__main__.run_bronze", return_value=[])
+    fake_files = mocker.patch("world_bank.__main__.run_source_files")
+
+    assert main(["load-bronze"]) == 0
+
+    conn = fake_connect.return_value.__enter__.return_value
+    fake_files.assert_called_once_with(conn, settings)

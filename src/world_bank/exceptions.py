@@ -32,6 +32,10 @@ class TransientApiError(ApiResponseError):
     """
 
 
+class SourceFileError(WorldBankError):
+    """Falha ao baixar um arquivo publicado fora da API."""
+
+
 class SchemaValidationError(WorldBankError):
     """Dados que não respeitam o esquema ou as regras de qualidade esperadas."""
 

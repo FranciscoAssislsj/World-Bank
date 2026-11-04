@@ -14,16 +14,24 @@ from world_bank.exceptions import LoadError, MigrationError
 from world_bank.extract.client import ApiPage
 from world_bank.load.postgres import (
     MIGRATIONS_DIR,
+    BronzeLoad,
     Migration,
+    SourceFile,
     apply_migrations,
     checksum,
     connect,
+    content_hash,
+    delete_missing_links,
     insert_pages,
+    insert_source_file,
     json_hash,
     latest_payload_hashes,
+    latest_source_file,
     list_migrations,
     params_hash,
+    read_latest_load,
     request_params,
+    upsert_rows,
 )
 
 
@@ -235,3 +243,155 @@ def test_insert_pages_keeps_original_payload(
     assert row[4:8] == (1, 1, 2, 2)
     assert row[8].obj == payload
     assert row[9] == json_hash(payload)
+
+
+def test_read_latest_load_joins_pages_in_order() -> None:
+    run_id = uuid4()
+    conn = MagicMock()
+    conn.execute.return_value.fetchall.return_value = [
+        (run_id, [{"id": "A"}, {"id": "B"}]),
+        (run_id, [{"id": "C"}]),
+    ]
+
+    load = read_latest_load(conn, "country")
+
+    assert load == BronzeLoad(
+        "country", run_id, [{"id": "A"}, {"id": "B"}, {"id": "C"}]
+    )
+    query = conn.execute.call_args.args[0]
+    assert "max(ingested_at)" in query
+    assert "order by page" in query
+    assert conn.execute.call_args.args[1] == {"endpoint": "country"}
+
+
+def test_read_latest_load_returns_none_when_never_loaded() -> None:
+    conn = MagicMock()
+    conn.execute.return_value.fetchall.return_value = []
+
+    assert read_latest_load(conn, "country") is None
+
+
+def test_read_latest_load_accepts_page_without_records() -> None:
+    conn = MagicMock()
+    conn.execute.return_value.fetchall.return_value = [(uuid4(), None)]
+
+    load = read_latest_load(conn, "country")
+
+    assert load is not None
+    assert load.records == []
+
+
+def _upsert_statements(conn: MagicMock) -> list[str]:
+    cursor = conn.cursor.return_value.__enter__.return_value
+    return [call.args[0].as_string() for call in cursor.execute.call_args_list]
+
+
+def test_upsert_rows_skips_database_when_there_are_no_rows() -> None:
+    conn = MagicMock()
+
+    assert upsert_rows(conn, "dim_regiao", ["regiao_id"], []) == 0
+    conn.cursor.assert_not_called()
+
+
+def test_upsert_rows_copies_values_in_column_order() -> None:
+    conn = MagicMock()
+    cursor = conn.cursor.return_value.__enter__.return_value
+    copy = cursor.copy.return_value.__enter__.return_value
+    run_id = uuid4()
+    rows = [{"regiao_id": "AAA", "nome": "Região", "bronze_run_id": run_id}]
+
+    upsert_rows(conn, "dim_regiao", ["regiao_id"], rows)
+
+    copy.write_row.assert_called_once_with(["AAA", "Região", run_id])
+
+
+def test_upsert_rows_quotes_names_as_identifiers() -> None:
+    conn = MagicMock()
+    rows = [{'id"; drop table x; --': "A", "bronze_run_id": uuid4()}]
+
+    upsert_rows(conn, 'tabela"ruim', ['id"; drop table x; --'], rows)
+
+    insert = _upsert_statements(conn)[1]
+    assert '"silver"."tabela""ruim"' in insert
+    assert '"id""; drop table x; --"' in insert
+
+
+def test_upsert_rows_only_updates_when_data_columns_change() -> None:
+    conn = MagicMock()
+    rows = [{"regiao_id": "AAA", "nome": "Região", "bronze_run_id": uuid4()}]
+
+    upsert_rows(conn, "dim_regiao", ["regiao_id"], rows)
+
+    insert = _upsert_statements(conn)[1]
+    assert 'on conflict ("regiao_id") do update' in insert
+    assert '"bronze_run_id" = excluded."bronze_run_id"' in insert
+    assert "atualizado_em = now()" in insert
+    # A linhagem fica fora da comparação: conteúdo igual não gera escrita (D-033).
+    assert 'where ("alvo"."nome") is distinct from ("excluded"."nome")' in insert
+
+
+def test_upsert_rows_does_nothing_on_conflict_when_all_columns_are_key() -> None:
+    conn = MagicMock()
+    rows = [{"indicador_id": "A", "topico_id": 1, "bronze_run_id": uuid4()}]
+
+    upsert_rows(conn, "ponte", ["indicador_id", "topico_id"], rows)
+
+    assert "do nothing" in _upsert_statements(conn)[1]
+
+
+def test_upsert_rows_returns_rows_written_and_drops_staging() -> None:
+    conn = MagicMock()
+    cursor = conn.cursor.return_value.__enter__.return_value
+    cursor.rowcount = 3
+    rows = [{"regiao_id": "AAA", "nome": "Região"}]
+
+    assert upsert_rows(conn, "dim_regiao", ["regiao_id"], rows) == 3
+    assert _upsert_statements(conn)[-1] == 'drop table "stg_dim_regiao"'
+
+
+def test_delete_missing_links_sends_indicators_and_links() -> None:
+    conn = MagicMock()
+    conn.execute.return_value.rowcount = 2
+
+    deleted = delete_missing_links(conn, ["A", "B"], [("A", 1), ("A", 2)])
+
+    assert deleted == 2
+    assert conn.execute.call_args.args[1] == {
+        "indicators": ["A", "B"],
+        "link_indicators": ["A", "A"],
+        "link_topics": [1, 2],
+    }
+
+
+def test_latest_source_file_returns_newest_version() -> None:
+    run_id = uuid4()
+    conn = MagicMock()
+    conn.execute.return_value.fetchone.return_value = (run_id, b"PK", "abc")
+
+    latest = latest_source_file(conn, "income_history")
+
+    assert latest == SourceFile("income_history", run_id, b"PK", "abc")
+    assert "order by ingested_at desc" in conn.execute.call_args.args[0]
+
+
+def test_latest_source_file_returns_none_when_never_loaded() -> None:
+    conn = MagicMock()
+    conn.execute.return_value.fetchone.return_value = None
+
+    assert latest_source_file(conn, "income_history") is None
+
+
+def test_insert_source_file_stores_bytes_hash_and_size() -> None:
+    conn = MagicMock()
+    run_id = uuid4()
+
+    insert_source_file(conn, run_id, "income_history", "https://x.invalid/a", b"PK")
+
+    assert conn.execute.call_args.args[1] == (
+        run_id,
+        "income_history",
+        "https://x.invalid/a",
+        b"PK",
+        content_hash(b"PK"),
+        2,
+    )

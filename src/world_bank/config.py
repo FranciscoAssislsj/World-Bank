@@ -49,6 +49,7 @@ class Settings(BaseSettings):
         start_year: Primeiro ano extraído.
         end_year: Último ano extraído.
         indicators: Códigos dos indicadores extraídos.
+        income_history_url: Versão do histórico oficial de renda usada (D-037).
         log_level: Nível mínimo de log.
     """
 
@@ -64,6 +65,10 @@ class Settings(BaseSettings):
     start_year: int = Field(default=2000, ge=1960)
     end_year: int = Field(default=2024, ge=1960)
     indicators: list[str] = Field(min_length=1)
+    income_history_url: str = (
+        "https://datacatalogfiles.worldbank.org/ddh-published/0037712/DR0095334/"
+        "OGHIST_2026_07_01.xlsx"
+    )
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
     @model_validator(mode="after")
