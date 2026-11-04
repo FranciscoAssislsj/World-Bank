@@ -49,3 +49,13 @@ Validação executada pela IA a pedido do usuário ("valide"): `uv sync --locked
 | A pesquisa da IA encontrou o `OGHIST` de julho de 2025 e o tratou como a versão disponível. | Teste do endereço com a data de 2026, antes de usar o arquivo. | O projeto usa `OGHIST_2026_07_01.xlsx`, que vai até o ano de referência 2025. |
 
 Validação executada pela IA: `ruff format` e `ruff check` passaram, o `pytest` deu **192 passed** com cobertura de **99,33%**, e o `pytest -m integration` deu **10 passed**, sem deixar linhas de teste no banco. O `load-dimensions` gravou 44, 7, 4, 71, 21, 296, 7.990, 15 e 23 linhas, e a 2ª execução gravou 0. O `load-bronze` repetido gravou 0 requisições e não regravou o arquivo. A recontagem direta no Excel deu as mesmas 7.990 linhas, e os 217 países têm a mesma classificação no arquivo (ano de referência 2025) e na API.
+
+## Fase 4 — Silver: fato de observações
+
+| O que a IA assumiu ou errou | Como foi descoberto | Correção |
+|---|---|---|
+| O plano guardava `period` e `frequency`, supondo dados de várias frequências. | Perfilamento: as 99.750 linhas são todas anuais. | O fato usa só `ano`, e um dado trimestral interrompe a carga (D-040). |
+| O plano decidia pular a carga comparando `lastupdated`. Essa data é da base inteira e não garante que uma correção seja detectada. | Revisão da spec, comparando com a detecção de mudança que a bronze já faz. | A comparação usa as cargas da bronze lidas na última execução (D-045). |
+| A spec esperava 5 agregados de renda na conferência. São 7: os 5 eram só os que vêm sem ISO3, e `LMY` e `MIC` também são de renda. | A consulta de conferência devolveu 7 linhas. | O esperado da spec foi corrigido. Todos têm 375 observações. |
+
+Validação executada pela IA: `ruff format` e `ruff check` passaram, o `pytest` deu **235 passed** com cobertura de **99,43%**, e o `pytest -m integration` deu **16 passed**, sem deixar linhas de teste no banco. O `load-observations` gravou 99.750 linhas; a 2ª execução foi pulada, e o `--full-refresh` leu 99.750 e gravou 0. A soma dos valores e a comparação linha a linha com a bronze deram 0 diferenças, a bronze continuou com 121 páginas, e o `EXPLAIN` mostrou o uso do índice `(indicador_id, ano)`.

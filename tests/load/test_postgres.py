@@ -21,16 +21,21 @@ from world_bank.load.postgres import (
     checksum,
     connect,
     content_hash,
+    country_codes,
     delete_missing_links,
+    finish_pipeline_run,
     insert_pages,
     insert_source_file,
     json_hash,
+    last_successful_bronze_runs,
     latest_payload_hashes,
     latest_source_file,
     list_migrations,
     params_hash,
     read_latest_load,
+    read_observation_load,
     request_params,
+    start_pipeline_run,
     upsert_rows,
 )
 
@@ -395,3 +400,80 @@ def test_insert_source_file_stores_bytes_hash_and_size() -> None:
         content_hash(b"PK"),
         2,
     )
+
+
+def test_read_observation_load_filters_endpoint_and_period() -> None:
+    run_id = uuid4()
+    conn = MagicMock()
+    conn.execute.return_value.fetchall.return_value = [
+        (run_id, [{"id": "A"}]),
+        (run_id, None),
+    ]
+
+    load = read_observation_load(conn, "country/all/indicator/A", "2000:2024")
+
+    assert load == BronzeLoad("country/all/indicator/A", run_id, [{"id": "A"}])
+    query, params = conn.execute.call_args.args
+    assert "params ->> 'date' = %(period)s" in query
+    assert "max(ingested_at)" in query
+    assert params == {"endpoint": "country/all/indicator/A", "period": "2000:2024"}
+
+
+def test_read_observation_load_returns_none_when_period_is_missing() -> None:
+    conn = MagicMock()
+    conn.execute.return_value.fetchall.return_value = []
+
+    assert read_observation_load(conn, "x", "2000:2024") is None
+
+
+def test_country_codes_maps_iso2_to_iso3() -> None:
+    conn = MagicMock()
+    conn.execute.return_value.fetchall.return_value = [("XA", "XAA"), ("1W", "WLD")]
+
+    assert country_codes(conn) == {"XA": "XAA", "1W": "WLD"}
+
+
+def test_start_pipeline_run_records_running_status() -> None:
+    conn = MagicMock()
+
+    run_id = start_pipeline_run(conn, "load-observations", {"period": "2000:2024"})
+
+    query, params = conn.execute.call_args.args
+    assert "'running'" in query
+    assert params[0] == run_id
+    assert params[1] == "load-observations"
+    assert params[2].obj == {"period": "2000:2024"}
+
+
+def test_finish_pipeline_run_records_end_and_counts() -> None:
+    conn = MagicMock()
+    run_id, bronze_run = uuid4(), uuid4()
+
+    finish_pipeline_run(
+        conn, run_id, "failed", [bronze_run], rows_read=2, error_message="erro"
+    )
+
+    query, params = conn.execute.call_args.args
+    assert "finished_at = now()" in query
+    assert "%s::uuid[]" in query
+    assert params == ("failed", [bronze_run], 2, None, "erro", run_id)
+
+
+def test_last_successful_bronze_runs_filters_status_and_params() -> None:
+    bronze_run = uuid4()
+    conn = MagicMock()
+    conn.execute.return_value.fetchone.return_value = ([bronze_run],)
+
+    assert last_successful_bronze_runs(conn, "cmd", {"a": 1}) == [bronze_run]
+    query, params = conn.execute.call_args.args
+    assert "status = 'success'" in query
+    assert "order by started_at desc" in query
+    assert params[0] == "cmd"
+    assert params[1].obj == {"a": 1}
+
+
+def test_last_successful_bronze_runs_returns_none_without_history() -> None:
+    conn = MagicMock()
+    conn.execute.return_value.fetchone.return_value = None
+
+    assert last_successful_bronze_runs(conn, "cmd", {}) is None

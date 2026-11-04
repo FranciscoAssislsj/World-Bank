@@ -129,6 +129,20 @@ Uma linha = um tema dos indicadores.
 | `bronze_run_id` | identificador único | `uuid` | não |  | Carga da bronze de onde a linha veio (D-033). |
 | `atualizado_em` | data e hora | `timestamp with time zone` | não |  | Quando a linha foi criada ou um valor mudou pela última vez (D-033). |
 
+### `silver.fato_observacao`
+
+Uma linha = o valor de um indicador para um país ou agregado em um ano. Filtre dim_pais.e_agregado para não somar os dois (D-040).
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `pais_iso3` | texto | `text` | não | PK, FK → `dim_pais.pais_iso3` | País ou agregado medido (D-041). |
+| `indicador_id` | texto | `text` | não | PK, FK → `dim_indicador.indicador_id` | Indicador medido. |
+| `ano` | número inteiro | `smallint` | não | PK | Ano da observação. |
+| `valor` | número decimal | `numeric` | sim |  | Valor medido, sem arredondamento; NULL quando a fonte não tem o dado (D-042, D-043). |
+| `casas_decimais` | número inteiro | `smallint` | não |  | Casas sugeridas pela API para exibir o valor; não altera o valor guardado (D-047). |
+| `bronze_run_id` | identificador único | `uuid` | não |  | Carga da bronze de onde a linha veio (D-033). |
+| `atualizado_em` | data e hora | `timestamp with time zone` | não |  | Quando a linha foi criada ou um valor mudou pela última vez (D-033). |
+
 ### `silver.ponte_indicador_topico`
 
 Uma linha = a ligação de um indicador a um tópico (N:N, D-026).
@@ -181,6 +195,23 @@ Uma linha = uma versão de um arquivo baixado fora da API, como veio. Append-onl
 ## Camada `etl`
 
 Controle do pipeline.
+
+### `etl.pipeline_run`
+
+Uma linha = uma execução de um comando do pipeline (D-046).
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `run_id` | identificador único | `uuid` | não | PK | Identificador da execução. |
+| `pipeline` | texto | `text` | não |  | Comando executado (ex.: load-observations). |
+| `params` | JSON | `jsonb` | não |  | Período e indicadores usados. |
+| `bronze_run_ids` | lista de identificadores | `uuid[]` | não |  | Cargas da bronze lidas, em ordem; vazio se falhou antes de ler (D-045). |
+| `status` | texto | `text` | não |  | running, success, skipped ou failed. |
+| `rows_read` | número inteiro | `integer` | sim |  | Linhas lidas da bronze. |
+| `rows_written` | número inteiro | `integer` | sim |  | Linhas inseridas ou alteradas. |
+| `error_message` | texto | `text` | sim |  | Mensagem de erro; só em falha. |
+| `started_at` | data e hora | `timestamp with time zone` | não |  | Início da execução. |
+| `finished_at` | data e hora | `timestamp with time zone` | sim |  | Fim da execução; NULL enquanto roda. |
 
 ### `etl.schema_migrations`
 

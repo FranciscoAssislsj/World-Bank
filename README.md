@@ -18,12 +18,13 @@ cp .env.example .env         # depois, ajuste os valores locais
 docker compose up -d --wait  # sobe o PostgreSQL 17 em 127.0.0.1:5433
 uv run python -m world_bank migrate      # cria os schemas e as tabelas
 uv run python -m world_bank load-bronze  # grava na bronze as respostas da API e o histórico de renda
-uv run python -m world_bank load-dimensions  # grava as tabelas da silver a partir da bronze
+uv run python -m world_bank load-dimensions  # grava os cadastros da silver a partir da bronze
+uv run python -m world_bank load-observations  # grava os valores dos indicadores na silver
 ```
 
 O banco fica na porta **5433** do computador, e não na 5432, para não conflitar com um PostgreSQL já instalado.
 
-`load-bronze` aceita `--start` e `--end` para mudar o período das observações (padrão: 2000–2024). Rodar de novo só grava as requisições cujo conteúdo mudou na API ([D-010](docs/data-decisions.md)).
+`load-bronze` e `load-observations` aceitam `--start` e `--end` para mudar o período das observações (padrão: 2000–2024). Rodar de novo o `load-bronze` só grava as requisições cujo conteúdo mudou na API ([D-010](docs/data-decisions.md)). O `load-observations` é pulado se a bronze não mudou, e `--full-refresh` força o reprocessamento ([D-045](docs/data-decisions.md)).
 
 | Tabela | Uma linha é |
 |---|---|
@@ -38,13 +39,15 @@ O banco fica na porta **5433** do computador, e não na 5432, para não conflita
 | `silver.dim_topico` | um tema dos indicadores |
 | `silver.dim_indicador` | uma série de dados |
 | `silver.ponte_indicador_topico` | a ligação entre um indicador e um tema |
+| `silver.fato_observacao` | o valor de um indicador para um país ou agregado em um ano |
+| `etl.pipeline_run` | uma execução de um comando do pipeline |
 | `etl.schema_migrations` | uma migração de `sql/migrations/` já aplicada |
 
 ## Modelo de dados
 
-![Diagrama da camada silver: dim_pais liga-se a dim_regiao, dim_nivel_renda, dim_tipo_emprestimo e classificacao_renda_anual; dim_indicador liga-se a dim_fonte e, pela ponte_indicador_topico, a dim_topico.](docs/modelagem-silver.svg)
+![Diagrama da camada silver: fato_observacao liga dim_pais e dim_indicador; dim_pais liga-se a dim_regiao, dim_nivel_renda, dim_tipo_emprestimo e classificacao_renda_anual; dim_indicador liga-se a dim_fonte e, pela ponte_indicador_topico, a dim_topico.](docs/modelagem-silver.svg)
 
-Os dois grupos ainda não se ligam: a tabela de observações, a próxima etapa, vai conectar países e indicadores.
+`fato_observacao` guarda os valores e liga países e indicadores. Ao somar, filtre `dim_pais.e_agregado`, para não contar países e agregados juntos. Para a renda de um país em um ano, use `classificacao_renda_anual`.
 
 As colunas de cada tabela, com tipo de valor e descrição, estão no [dicionário de dados](docs/dicionario-dados.md).
 

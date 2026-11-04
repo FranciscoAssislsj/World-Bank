@@ -10,6 +10,7 @@ from world_bank.load.postgres import apply_migrations, connect, list_migrations
 from world_bank.logging_config import configure_logging
 from world_bank.pipelines.bronze import run_bronze
 from world_bank.pipelines.dimensions import run_dimensions
+from world_bank.pipelines.observations import run_observations
 from world_bank.pipelines.source_files import run_source_files
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
     commands.add_parser(
         "load-dimensions", help="grava as dimensões da silver a partir da bronze"
+    )
+    load_observations = commands.add_parser(
+        "load-observations", help="grava o fato da silver a partir da bronze"
+    )
+    load_observations.add_argument(
+        "--start", type=int, help="primeiro ano das observações (padrão: config)"
+    )
+    load_observations.add_argument(
+        "--end", type=int, help="último ano das observações (padrão: config)"
+    )
+    load_observations.add_argument(
+        "--full-refresh",
+        action="store_true",
+        help="processa de novo mesmo que a bronze não tenha mudado",
     )
     return parser
 
@@ -93,6 +108,30 @@ def run_load_dimensions(settings: Settings) -> None:
         run_dimensions(conn, settings)
 
 
+def run_load_observations(
+    settings: Settings,
+    start_year: int | None,
+    end_year: int | None,
+    full_refresh: bool,
+) -> None:
+    """Lê as observações da bronze e grava o fato da silver.
+
+    Args:
+        settings: Configurações (banco, indicadores e período).
+        start_year: Primeiro ano; ``None`` usa ``settings.start_year``.
+        end_year: Último ano; ``None`` usa ``settings.end_year``.
+        full_refresh: Processa de novo mesmo que a bronze não tenha mudado.
+    """
+    with connect(settings) as conn:
+        run_observations(
+            conn,
+            settings,
+            start_year or settings.start_year,
+            end_year or settings.end_year,
+            full_refresh,
+        )
+
+
 def main(argv: list[str] | None = None) -> int:
     """Executa a CLI.
 
@@ -119,6 +158,8 @@ def main(argv: list[str] | None = None) -> int:
             run_load_bronze(settings, args.start, args.end)
         elif args.command == "load-dimensions":
             run_load_dimensions(settings)
+        elif args.command == "load-observations":
+            run_load_observations(settings, args.start, args.end, args.full_refresh)
     except WorldBankError:
         logger.exception("command failed", extra={"command": args.command})
         return 1
