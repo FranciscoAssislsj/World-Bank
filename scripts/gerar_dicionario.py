@@ -29,6 +29,7 @@ VALUE_TYPES = {
     "date": "data",
     "timestamp with time zone": "data e hora",
     "uuid": "identificador único",
+    "uuid[]": "lista de identificadores",
     "jsonb": "JSON",
     "bytea": "arquivo (bytes)",
 }

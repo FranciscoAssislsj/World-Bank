@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import psycopg
 from psycopg import sql
@@ -532,3 +532,130 @@ def insert_source_file(
         """,
         (run_id, source, url, content, content_hash(content), len(content)),
     )
+
+
+def read_observation_load(
+    conn: psycopg.Connection, endpoint: str, period: str
+) -> BronzeLoad | None:
+    """Lê a carga mais recente de observações de um período (D-044).
+
+    Args:
+        conn: Conexão com o banco.
+        endpoint: Caminho da requisição.
+        period: Período no formato da API (ex.: ``"2000:2024"``).
+
+    Returns:
+        A carga, ou ``None`` se esse período nunca foi gravado.
+    """
+    rows = conn.execute(
+        """
+        select run_id, payload -> 1
+        from bronze.api_response
+        where endpoint = %(endpoint)s
+          and params ->> 'date' = %(period)s
+          and ingested_at = (
+              select max(ingested_at) from bronze.api_response
+              where endpoint = %(endpoint)s and params ->> 'date' = %(period)s
+          )
+        order by page
+        """,
+        {"endpoint": endpoint, "period": period},
+    ).fetchall()
+    if not rows:
+        return None
+    records = [record for _, page_records in rows for record in page_records or []]
+    return BronzeLoad(endpoint, rows[0][0], records)
+
+
+def country_codes(conn: psycopg.Connection) -> dict[str, str]:
+    """Devolve o mapa de ``pais_iso2`` para ``pais_iso3`` (D-041).
+
+    Args:
+        conn: Conexão com o banco.
+
+    Returns:
+        O código ISO3 de cada código ISO2 em ``silver.dim_pais``.
+    """
+    rows = conn.execute("select pais_iso2, pais_iso3 from silver.dim_pais")
+    return dict(rows.fetchall())
+
+
+def start_pipeline_run(
+    conn: psycopg.Connection, pipeline: str, params: dict[str, Any]
+) -> UUID:
+    """Registra o início de uma execução em ``etl.pipeline_run`` (D-046).
+
+    Roda fora da transação da carga, para o registro sobreviver a uma falha.
+
+    Args:
+        conn: Conexão em modo autocommit.
+        pipeline: Nome do comando.
+        params: Parâmetros da execução.
+
+    Returns:
+        O identificador da execução.
+    """
+    run_id = uuid4()
+    conn.execute(
+        "insert into etl.pipeline_run (run_id, pipeline, params, status)"
+        " values (%s, %s, %s, 'running')",
+        (run_id, pipeline, Jsonb(params)),
+    )
+    return run_id
+
+
+def finish_pipeline_run(
+    conn: psycopg.Connection,
+    run_id: UUID,
+    status: str,
+    bronze_run_ids: Sequence[UUID],
+    rows_read: int | None = None,
+    rows_written: int | None = None,
+    error_message: str | None = None,
+) -> None:
+    """Registra o fim de uma execução em ``etl.pipeline_run`` (D-046).
+
+    Args:
+        conn: Conexão em modo autocommit.
+        run_id: Identificador da execução.
+        status: ``"success"``, ``"skipped"`` ou ``"failed"``.
+        bronze_run_ids: Cargas da bronze lidas.
+        rows_read: Linhas lidas da bronze.
+        rows_written: Linhas inseridas ou alteradas.
+        error_message: Mensagem de erro, em caso de falha.
+    """
+    conn.execute(
+        """
+        update etl.pipeline_run
+        set status = %s, bronze_run_ids = %s::uuid[], rows_read = %s,
+            rows_written = %s, error_message = %s, finished_at = now()
+        where run_id = %s
+        """,
+        (status, list(bronze_run_ids), rows_read, rows_written, error_message, run_id),
+    )
+
+
+def last_successful_bronze_runs(
+    conn: psycopg.Connection, pipeline: str, params: dict[str, Any]
+) -> list[UUID] | None:
+    """Busca as cargas lidas pela última execução bem-sucedida (D-045).
+
+    Args:
+        conn: Conexão com o banco.
+        pipeline: Nome do comando.
+        params: Parâmetros que a execução precisa ter usado.
+
+    Returns:
+        As cargas da bronze, ou ``None`` se não houve execução assim.
+    """
+    row = conn.execute(
+        """
+        select bronze_run_ids
+        from etl.pipeline_run
+        where pipeline = %s and params = %s and status = 'success'
+        order by started_at desc
+        limit 1
+        """,
+        (pipeline, Jsonb(params)),
+    ).fetchone()
+    return None if row is None else list(row[0])
