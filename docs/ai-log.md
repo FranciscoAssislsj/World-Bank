@@ -110,3 +110,12 @@ Durante o `run-all`, a API trouxe uma mudança real no cadastro de fontes: a bro
 | A IA testou o hook do Ruff com um arquivo fora do repositório. O resultado foi "Passed", mesmo com um erro no arquivo: o Ruff corrigiu o arquivo, e o pre-commit só percebe a alteração em arquivos dentro do repositório. | O resultado contrariava o esperado, e o arquivo aparecia alterado. | O teste foi refeito com `git commit` de verdade em um clone descartável. |
 
 Validação executada pela IA: `pre-commit run --all-files` passou sem alterar nenhum arquivo, e o `pytest` deu **305 passed**. No clone descartável, o `git commit` foi barrado com erro corrigível de lint e de formatação, com nome indefinido, com `.env` adicionado à força e com `uv.lock` desatualizado. Depois da correção automática, o novo commit passou. A detecção de chave privada foi testada com `pre-commit run`, sem commit.
+
+## MCP — ponte única
+
+| O que a IA assumiu ou errou | Como foi descoberto | Correção |
+|---|---|---|
+| A configuração do MCP com `docker run` criava um container por sessão do Claude Code, e a IA não avisou. | O responsável viu 6 containers no Docker Desktop e perguntou o motivo. | Um único container no `docker-compose.yml` (D-076). |
+| Ao inspecionar o `.env`, a IA mascarou só as chaves com `PASSWORD` no nome, e a senha local dentro da `DATABASE_URL` apareceu na saída do comando. | A própria IA viu a saída. | Avisou o responsável. A senha não foi para o repositório, e a troca é decisão dele. |
+
+Validação executada pela IA: dois clientes ao mesmo tempo na ponte leram `gold.pais_ano` (5.425 linhas cada), o `create table` foi recusado nos dois, e a tabela não existe no banco. O `docker compose up` não recriou o banco. Com o `.env.example`, como no CI, o Compose lista só o serviço `postgres`.
