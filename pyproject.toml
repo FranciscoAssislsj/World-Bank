@@ -83,6 +83,7 @@ exclude_also = [
 dev = [
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.8.0",
+    "pre-commit>=4.7.0",
     "pytest>=9.2.0",
     "pytest-cov>=7.1.0",
     "pytest-mock>=3.17.0",

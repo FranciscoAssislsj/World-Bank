@@ -102,3 +102,11 @@ Durante o `run-all`, a API trouxe uma mudança real no cadastro de fontes: a bro
 |---|---|---|
 | Na Fase 6, a IA registrou que `pytest -m integration` deu "42 passed" e leu só a contagem. O comando termina com erro, porque a cobertura mínima de 70% vale também para ele (50% nesse caso). | Ensaio do CI em um Linux limpo, conferindo o código de saída de cada comando. | O README e o CI usam `--no-cov` nos testes de integração. |
 | O registro da Fase 6 não dizia que 26 dos 42 testes de integração se pulam com a silver vazia, o que daria um CI verde sem testar a gold. | O mesmo ensaio, com o banco vazio: 16 passados e 26 pulados, com código de saída 0. | O CI carrega os dados antes dos testes e falha se algum teste for pulado (D-072). |
+
+## Pre-commit
+
+| O que a IA assumiu ou errou | Como foi descoberto | Correção |
+|---|---|---|
+| A IA testou o hook do Ruff com um arquivo fora do repositório. O resultado foi "Passed", mesmo com um erro no arquivo: o Ruff corrigiu o arquivo, e o pre-commit só percebe a alteração em arquivos dentro do repositório. | O resultado contrariava o esperado, e o arquivo aparecia alterado. | O teste foi refeito com `git commit` de verdade em um clone descartável. |
+
+Validação executada pela IA: `pre-commit run --all-files` passou sem alterar nenhum arquivo, e o `pytest` deu **305 passed**. No clone descartável, o `git commit` foi barrado com erro corrigível de lint e de formatação, com nome indefinido, com `.env` adicionado à força e com `uv.lock` desatualizado. Depois da correção automática, o novo commit passou. A detecção de chave privada foi testada com `pre-commit run`, sem commit.
