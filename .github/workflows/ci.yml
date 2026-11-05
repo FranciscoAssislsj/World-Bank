@@ -1,0 +1,88 @@
+# Integração contínua: a cada envio ao GitHub, confere o código em uma máquina limpa.
+# O motivo de cada escolha está em docs/data-decisions.md (D-071 a D-074).
+
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Só leitura: o CI confere o código e não altera nada no repositório.
+permissions:
+  contents: read
+
+# Um envio novo na mesma branch cancela a conferência antiga, que perdeu o sentido.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_LOCKED: "1"       # falha se o uv.lock estiver desatualizado em relação ao pyproject
+  WB_LOG_LEVEL: INFO   # o configs/dev.toml usa DEBUG, que encheria o log do CI
+
+jobs:
+  qualidade:
+    name: Lint e testes unitários
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+
+      - name: Instalar o Python e as dependências
+        run: uv sync
+
+      - name: Conferir a formatação
+        run: uv run ruff format --check .
+
+      - name: Conferir o lint
+        run: uv run ruff check .
+
+      - name: Rodar os testes unitários (sem rede e sem banco, cobertura >= 70%)
+        run: uv run pytest
+
+  integracao:
+    name: Pipeline completo e testes de integração
+    needs: qualidade # não chama a API do World Bank se o código já falhou no básico
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+
+      - name: Instalar o Python e as dependências
+        run: uv sync
+
+      # A senha do .env.example é fictícia e o banco morre com a máquina: não há segredo.
+      - name: Criar o .env a partir do exemplo
+        run: cp .env.example .env
+
+      - name: Subir o PostgreSQL
+        run: docker compose up -d --wait
+
+      - name: Rodar o pipeline completo contra a API real
+        run: uv run python -m world_bank run-all
+
+      # Parte dos testes se pula sozinha se a silver estiver vazia. No CI, pular é falha:
+      # sem esta conferência, o resultado ficaria verde sem testar a gold e a qualidade.
+      - name: Rodar os testes de integração, sem aceitar teste pulado
+        shell: bash
+        run: |
+          uv run pytest -m integration --no-cov -rs | tee "$RUNNER_TEMP/integracao.log"
+          if grep -q "^SKIPPED" "$RUNNER_TEMP/integracao.log"; then
+            echo "::error::Há testes de integração pulados."
+            exit 1
+          fi
