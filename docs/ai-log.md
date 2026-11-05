@@ -96,3 +96,9 @@ Validação executada pela IA: `ruff format --check` e `ruff check` passaram, o 
 
 Durante o `run-all`, a API trouxe uma mudança real no cadastro de fontes: a bronze passou de 121 para 122 páginas, e 4 linhas de `dim_fonte` mudaram. As observações não mudaram.
 
+## CI — GitHub Actions
+
+| O que a IA assumiu ou errou | Como foi descoberto | Correção |
+|---|---|---|
+| Na Fase 6, a IA registrou que `pytest -m integration` deu "42 passed" e leu só a contagem. O comando termina com erro, porque a cobertura mínima de 70% vale também para ele (50% nesse caso). | Ensaio do CI em um Linux limpo, conferindo o código de saída de cada comando. | O README e o CI usam `--no-cov` nos testes de integração. |
+| O registro da Fase 6 não dizia que 26 dos 42 testes de integração se pulam com a silver vazia, o que daria um CI verde sem testar a gold. | O mesmo ensaio, com o banco vazio: 16 passados e 26 pulados, com código de saída 0. | O CI carrega os dados antes dos testes e falha se algum teste for pulado (D-072). |

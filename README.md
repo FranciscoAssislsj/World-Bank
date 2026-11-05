@@ -1,5 +1,7 @@
 # World-Bank
 
+[![CI](https://github.com/FranciscoAssislsj/World-Bank/actions/workflows/ci.yml/badge.svg)](https://github.com/FranciscoAssislsj/World-Bank/actions/workflows/ci.yml)
+
 Pipeline de dados que consome a [World Bank Indicators API v2](https://datahelpdesk.worldbank.org/knowledgebase/articles/889392) e organiza os dados em **arquitetura medalhão** (`bronze` → `silver` → `gold`) no **PostgreSQL**, com dashboards em Streamlit e Power BI.
 
 > Em construção. A documentação completa (tabelas, indicadores, dashboards e a seção "Onde a IA errou") entra na fase final.
@@ -82,5 +84,9 @@ Os valores da fonte nunca são alterados, e o dado do World Bank é tratado como
 uv run ruff format --check .
 uv run ruff check .
 uv run pytest                # testes unitários: sem rede e sem banco, cobertura >= 70%
-uv run pytest -m integration # testes contra o PostgreSQL local
+uv run pytest -m integration --no-cov # testes contra o PostgreSQL local, com a silver carregada
 ```
+
+O `--no-cov` existe porque a cobertura mínima vale para os testes unitários. Sem ele, o comando termina com erro mesmo com todos os testes passando.
+
+O [CI](.github/workflows/ci.yml) roda essas conferências em uma máquina limpa a cada envio para `dev` e `main` e em cada pull request para a `main`. Ele sobe o banco, roda o `run-all` contra a API real e não aceita teste de integração pulado ([D-071 a D-074](docs/data-decisions.md)). Se a API do World Bank estiver fora do ar, o CI fica vermelho sem que o código tenha problema: nesse caso, rode de novo.
