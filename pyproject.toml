@@ -45,6 +45,13 @@ ignore = []
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101"]  # assert é permitido em testes
+# Os símbolos × e − fazem parte do texto mostrado na tela.
+"dashboard/*.py" = ["RUF001", "RUF002"]
+"src/world_bank/dashboard/formato.py" = ["RUF001", "RUF002"]
+"tests/dashboard/test_formato.py" = ["RUF001"]
+# As f-strings só juntam constantes deste arquivo; filtro da tela entra como parâmetro,
+# e um teste confere que toda consulta lê só a gold.
+"src/world_bank/dashboard/consultas.py" = ["S608"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["world_bank"]
@@ -80,6 +87,10 @@ exclude_also = [
 ]
 
 [dependency-groups]
+dashboard = [
+    "altair>=6.3.0",
+    "streamlit>=1.67.0",
+]
 dev = [
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.8.0",

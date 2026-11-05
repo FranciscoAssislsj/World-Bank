@@ -1,0 +1,18 @@
+# Cinza claro de fundo, azul-marinho no menu e branco nos cartões (D-084).
+[theme]
+base = "light"
+primaryColor = "#2a78d6"
+backgroundColor = "#f3f4f6"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#0b0b0b"
+
+[theme.sidebar]
+backgroundColor = "#0d366b"
+secondaryBackgroundColor = "#184f95"
+textColor = "#ffffff"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false

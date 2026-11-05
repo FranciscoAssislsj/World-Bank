@@ -1,13 +1,13 @@
 -- gold.resumo_renda_regiao
 -- Pergunta de negócio: Como cada indicador evolui por nível de renda e por região, incluindo pobreza e desigualdade?
 -- Grão (o que é uma linha): um indicador em um ano, em um recorte (renda_regiao, renda, regiao ou mundo).
--- Origem: silver.fato_observacao, silver.dim_pais, silver.dim_regiao, silver.dim_nivel_renda, silver.dim_indicador, silver.classificacao_renda_anual, silver.valor_atipico
--- Regras: só países, sem agregados (D-023). A renda é a daquele ano, e país sem classificação sai só dos recortes de renda (D-059). Os recortes vêm prontos porque mediana não se soma; filtre por recorte para não contar em dobro (D-060). Média simples e mediana, sem ponderar (D-061). A média e a mediana usam todos os valores da silver, sem exclusão, e valores_atipicos avisa quantos foram apontados (D-062, D-070). A contagem de países mostra a cobertura (D-063).
+-- Origem: silver.nome_portugues, silver.fato_observacao, silver.dim_pais, silver.dim_regiao, silver.dim_nivel_renda, silver.dim_indicador, silver.classificacao_renda_anual, silver.valor_atipico
+-- Regras: Nomes em português, com o original guardado na silver (D-082). só países, sem agregados (D-023). A renda é a daquele ano, e país sem classificação sai só dos recortes de renda (D-059). Os recortes vêm prontos porque mediana não se soma; filtre por recorte para não contar em dobro (D-060). Média simples e mediana, sem ponderar (D-061). A média e a mediana usam todos os valores da silver, sem exclusão, e valores_atipicos avisa quantos foram apontados (D-062, D-070). A contagem de países mostra a cobertura (D-063).
 -- Chave: recorte, ano, indicador_id, nivel_renda_id, regiao_id
 -- Coluna recorte: renda_regiao, renda, regiao ou mundo (D-060).
 -- Coluna ano: Ano da observação.
 -- Coluna indicador_id: Código do indicador.
--- Coluna indicador: Nome do indicador, como vem da API.
+-- Coluna indicador: Nome do indicador em português (D-082).
 -- Coluna nivel_renda_id: Nível de renda naquele ano; NULL se o recorte não usa renda.
 -- Coluna nivel_renda: Nome do nível de renda.
 -- Coluna nivel_renda_ordem: Ordem do nível, do menor para o maior, para ordenar gráficos.
@@ -70,12 +70,12 @@ select
     s.recorte,
     s.ano,
     s.indicador_id,
-    i.nome as indicador,
+    silver.nome_pt('indicador', i.indicador_id, i.nome) as indicador,
     s.nivel_renda_id,
-    n.nome as nivel_renda,
+    silver.nome_pt('renda', n.nivel_renda_id, n.nome) as nivel_renda,
     n.ordem as nivel_renda_ordem,
     s.regiao_id,
-    r.nome as regiao,
+    silver.nome_pt('regiao', r.regiao_id, r.nome) as regiao,
     s.media,
     s.mediana,
     s.paises_com_valor,

@@ -1,8 +1,8 @@
 -- gold.ranking_crescimento
 -- Pergunta de negócio: Quais países mais cresceram na última década, em PIB real e em população urbana, por região?
 -- Grão (o que é uma linha): um país, na janela dos últimos 10 anos com dado.
--- Origem: silver.fato_observacao, silver.dim_pais, silver.dim_regiao, silver.dim_nivel_renda
--- Regras: só países, sem agregados (D-023). PIB real, com as taxas anuais compostas, e exige os 10 anos (D-064). População urbana = população x percentual urbano (D-065). Nenhum país sai por ter valor estranho (D-062, D-070). País sem dado fica na view, sem posição (D-042, D-064).
+-- Origem: silver.nome_portugues, silver.fato_observacao, silver.dim_pais, silver.dim_regiao, silver.dim_nivel_renda
+-- Regras: Nomes em português, com o original guardado na silver (D-082). só países, sem agregados (D-023). PIB real, com as taxas anuais compostas, e exige os 10 anos (D-064). População urbana = população x percentual urbano (D-065). Nenhum país sai por ter valor estranho (D-062, D-070). País sem dado fica na view, sem posição (D-042, D-064).
 -- Chave: pais_iso3
 -- Coluna pais_iso3: Código ISO3 do país.
 -- Coluna pais: Nome do país.
@@ -56,11 +56,11 @@ urbana as (
 calculo as (
     select
         p.pais_iso3,
-        p.nome as pais,
+        silver.nome_pt('pais', p.pais_iso3, p.nome) as pais,
         p.regiao_id,
-        r.nome as regiao,
+        silver.nome_pt('regiao', r.regiao_id, r.nome) as regiao,
         p.nivel_renda_atual_id,
-        n.nome as nivel_renda_atual,
+        silver.nome_pt('renda', n.nivel_renda_id, n.nome) as nivel_renda_atual,
         j.ano_inicial,
         j.ano_final,
         case when pib.anos_com_valor = j.ano_final - j.ano_inicial then 100 * (pib.fator - 1) end

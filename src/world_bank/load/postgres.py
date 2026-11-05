@@ -17,10 +17,11 @@ from uuid import UUID, uuid4
 
 import psycopg
 from psycopg import sql
+from psycopg.conninfo import conninfo_to_dict
 from psycopg.types.json import Jsonb
 
 from world_bank.config import Settings
-from world_bank.exceptions import LoadError, MigrationError
+from world_bank.exceptions import ConfigurationError, LoadError, MigrationError
 from world_bank.extract.client import ApiPage
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,9 @@ logger = logging.getLogger(__name__)
 MIGRATIONS_DIR = Path(__file__).resolve().parents[3] / "sql" / "migrations"
 
 _MIGRATION_NAME = re.compile(r"^(?P<version>\d{3})_[a-z0-9_]+\.sql$")
+
+# Usuário só de leitura dos dashboards, criado na migração 011 (D-079).
+DASHBOARD_ROLE = "dashboard_leitor"
 
 # Linhagem (D-033): não conta como mudança de valor no upsert.
 _LINEAGE_COLUMN = "bronze_run_id"
@@ -212,6 +216,41 @@ def apply_migrations(
             ) from exc
         logger.info("migration applied", extra={"migration": migration.filename})
     return pending
+
+
+def sync_dashboard_password(conn: psycopg.Connection, settings: Settings) -> bool:
+    """Define a senha do usuário dos dashboards a partir do ``.env`` (D-079).
+
+    A senha sai do ``DASHBOARD_DATABASE_URL`` e chega ao banco já criptografada, para
+    não aparecer em log do servidor nem ficar em uma migração versionada.
+
+    Args:
+        conn: Conexão do usuário do pipeline.
+        settings: Configurações com ``DASHBOARD_DATABASE_URL``.
+
+    Returns:
+        ``True`` se a senha foi definida; ``False`` se a URL não foi informada, e aí
+        o usuário continua sem poder entrar.
+
+    Raises:
+        ConfigurationError: Se a URL não tiver senha ou for de outro usuário.
+    """
+    if settings.dashboard_database_url is None:
+        return False
+    url = settings.dashboard_database_url.get_secret_value()
+    info = conninfo_to_dict(url)
+    if info.get("user") != DASHBOARD_ROLE or not info.get("password"):
+        msg = f"DASHBOARD_DATABASE_URL precisa do usuário {DASHBOARD_ROLE} e de senha"
+        raise ConfigurationError(msg)
+    hashed = conn.pgconn.encrypt_password(
+        str(info["password"]).encode(), DASHBOARD_ROLE.encode(), b"scram-sha-256"
+    )
+    conn.execute(
+        sql.SQL("alter role {} login password {}").format(
+            sql.Identifier(DASHBOARD_ROLE), sql.Literal(hashed.decode())
+        )
+    )
+    return True
 
 
 def json_hash(value: Any) -> str:

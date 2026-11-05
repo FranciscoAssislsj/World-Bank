@@ -63,8 +63,9 @@ jobs:
         with:
           enable-cache: true
 
+      # O grupo dashboard entra aqui porque os testes de integração abrem as páginas.
       - name: Instalar o Python e as dependências
-        run: uv sync
+        run: uv sync --group dashboard
 
       # A senha do .env.example é fictícia e o banco morre com a máquina: não há segredo.
       - name: Criar o .env a partir do exemplo
@@ -81,7 +82,7 @@ jobs:
       - name: Rodar os testes de integração, sem aceitar teste pulado
         shell: bash
         run: |
-          uv run pytest -m integration --no-cov -rs | tee "$RUNNER_TEMP/integracao.log"
+          uv run --group dashboard pytest -m integration --no-cov -rs | tee "$RUNNER_TEMP/integracao.log"
           if grep -q "^SKIPPED" "$RUNNER_TEMP/integracao.log"; then
             echo "::error::Há testes de integração pulados."
             exit 1

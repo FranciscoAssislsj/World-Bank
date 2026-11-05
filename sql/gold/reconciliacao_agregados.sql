@@ -1,17 +1,17 @@
 -- gold.reconciliacao_agregados
 -- Pergunta de negócio: A soma dos países bate com o número oficial do World Bank?
 -- Grão (o que é uma linha): um agregado (região, nível de renda ou mundo), um indicador somável e um ano.
--- Origem: silver.fato_observacao, silver.dim_pais, silver.dim_nivel_renda, silver.dim_indicador
--- Regras: só população e PIB, os indicadores que podem ser somados. A renda é a atual, como o World Bank calcula (D-066). A soma usa todos os valores da silver, porque o número oficial os inclui (D-062). A tolerância é de 2% (D-066).
+-- Origem: silver.nome_portugues, silver.fato_observacao, silver.dim_pais, silver.dim_nivel_renda, silver.dim_indicador
+-- Regras: Nomes em português, com o original guardado na silver (D-082). só população e PIB, os indicadores que podem ser somados. A renda é a atual, como o World Bank calcula (D-066). A soma usa todos os valores da silver, porque o número oficial os inclui (D-062). A tolerância é de 2% (D-066).
 -- Chave: agregado_id, indicador_id, ano
 -- Coluna agregado_id: Código do agregado na API.
--- Coluna agregado: Nome do agregado.
+-- Coluna agregado: Nome do agregado em português (D-082).
 -- Coluna tipo: regiao, renda ou mundo.
 -- Coluna indicador_id: Código do indicador.
--- Coluna indicador: Nome do indicador, como vem da API.
+-- Coluna indicador: Nome do indicador em português (D-082).
 -- Coluna ano: Ano da observação.
 -- Coluna soma_paises: Soma calculada a partir dos países.
--- Coluna valor_oficial: Valor do agregado, como vem da API.
+-- Coluna valor_oficial: Valor do agregado publicado pela API.
 -- Coluna diferenca: soma_paises menos valor_oficial.
 -- Coluna diferenca_pct: A diferença, em % do valor oficial.
 -- Coluna paises_sem_valor: Países do grupo sem dado; explica boa parte da diferença no PIB (D-066).
@@ -46,10 +46,10 @@ soma as (
 )
 select
     s.agregado_id,
-    a.nome as agregado,
+    silver.nome_pt('agregado', s.agregado_id, a.nome) as agregado,
     s.tipo,
     s.indicador_id,
-    i.nome as indicador,
+    silver.nome_pt('indicador', i.indicador_id, i.nome) as indicador,
     s.ano,
     s.soma_paises,
     o.valor as valor_oficial,

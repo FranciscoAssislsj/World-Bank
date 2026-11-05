@@ -7,11 +7,13 @@ from uuid import uuid4
 
 import psycopg
 import pytest
+from pydantic import SecretStr
 from pytest_mock import MockerFixture
 
 from world_bank.config import load_settings
-from world_bank.exceptions import LoadError, MigrationError
+from world_bank.exceptions import ConfigurationError, LoadError, MigrationError
 from world_bank.extract.client import ApiPage
+from world_bank.load import postgres
 from world_bank.load.postgres import (
     MIGRATIONS_DIR,
     BronzeLoad,
@@ -502,3 +504,44 @@ def test_insert_quality_results_skips_empty_list() -> None:
     insert_quality_results(conn, uuid4(), [])
 
     conn.cursor.assert_not_called()
+
+
+def test_sync_dashboard_password_sem_url_nao_faz_nada(mocker: MockerFixture) -> None:
+    conn = mocker.MagicMock()
+    settings = mocker.MagicMock(dashboard_database_url=None)
+
+    assert postgres.sync_dashboard_password(conn, settings) is False
+    conn.execute.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "postgresql://outro:segredo@127.0.0.1:5433/world_bank",
+        "postgresql://dashboard_leitor@127.0.0.1:5433/world_bank",
+    ],
+)
+def test_sync_dashboard_password_recusa_url_errada(
+    mocker: MockerFixture, url: str
+) -> None:
+    conn = mocker.MagicMock()
+    settings = mocker.MagicMock(dashboard_database_url=SecretStr(url))
+
+    with pytest.raises(ConfigurationError, match="dashboard_leitor"):
+        postgres.sync_dashboard_password(conn, settings)
+    conn.execute.assert_not_called()
+
+
+def test_sync_dashboard_password_envia_a_senha_criptografada(
+    mocker: MockerFixture,
+) -> None:
+    conn = mocker.MagicMock()
+    conn.pgconn.encrypt_password.return_value = b"SCRAM-hash"
+    url = "postgresql://dashboard_leitor:s3gredo@127.0.0.1:5433/world_bank"
+    settings = mocker.MagicMock(dashboard_database_url=SecretStr(url))
+
+    assert postgres.sync_dashboard_password(conn, settings) is True
+    conn.pgconn.encrypt_password.assert_called_once_with(
+        b"s3gredo", b"dashboard_leitor", b"scram-sha-256"
+    )
+    assert "s3gredo" not in repr(conn.execute.call_args)

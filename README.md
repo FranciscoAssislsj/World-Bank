@@ -55,6 +55,7 @@ O banco fica na porta **5433** do computador, e não na 5432, para não conflita
 | [`gold.ranking_crescimento`](sql/gold/ranking_crescimento.sql) | um país, com o crescimento na última década e a posição |
 | [`gold.reconciliacao_agregados`](sql/gold/reconciliacao_agregados.sql) | a soma dos países contra o número oficial, por agregado, indicador e ano |
 | [`gold.valores_atipicos`](sql/gold/valores_atipicos.sql) | um valor apontado como estranho, com o motivo e o tratamento |
+| `silver.nome_portugues` | o nome em português de um código da API ([D-082](docs/data-decisions.md)) |
 | `etl.pipeline_run` | uma execução de um comando do pipeline |
 | `etl.quality_check` | o resultado de uma regra de qualidade em uma execução |
 | `etl.schema_migrations` | uma migração de `sql/migrations/` já aplicada |
@@ -84,7 +85,7 @@ Os valores da fonte nunca são alterados, e o dado do World Bank é tratado como
 uv run ruff format --check .
 uv run ruff check .
 uv run pytest                # testes unitários: sem rede e sem banco, cobertura >= 70%
-uv run pytest -m integration --no-cov # testes contra o PostgreSQL local, com a silver carregada
+uv run --group dashboard pytest -m integration --no-cov # testes contra o PostgreSQL local, com a silver carregada
 ```
 
 O `--no-cov` existe porque a cobertura mínima vale para os testes unitários. Sem ele, o comando termina com erro mesmo com todos os testes passando.
@@ -99,3 +100,29 @@ uv run pre-commit run --all-files   # opcional: confere o projeto inteiro agora
 Ele roda o Ruff, confere o `uv.lock` e barra arquivo `.env`, chave privada e arquivo grande ([D-075](docs/data-decisions.md)). Se ele corrigir um arquivo, o commit para: rode `git add` nesse arquivo e faça o commit de novo.
 
 O [CI](.github/workflows/ci.yml) roda essas conferências em uma máquina limpa a cada envio para `dev` e `main` e em cada pull request para a `main`. Ele sobe o banco, roda o `run-all` contra a API real e não aceita teste de integração pulado ([D-071 a D-074](docs/data-decisions.md)). Se a API do World Bank estiver fora do ar, o CI fica vermelho sem que o código tenha problema: nesse caso, rode de novo.
+
+## Dashboards
+
+O layout foi desenhado antes, no Figma ([imagens](docs/dashboard/layout/)), e as telas atuais estão em [docs/dashboard/streamlit](docs/dashboard/streamlit/). Os dashboards leem só a gold, com um usuário do banco que não consegue ler mais nada ([D-078 e D-079](docs/data-decisions.md)).
+
+```bash
+uv run python -m world_bank migrate   # define a senha do usuário dos dashboards, vinda do .env
+uv run --group dashboard streamlit run dashboard/app.py   # abre em http://localhost:8501
+```
+
+| Tela | O que mostra |
+|---|---|
+| Renda e qualidade de vida | Países analisados, expectativa de vida por faixa de renda e PIB per capita × expectativa de vida |
+| PIB e crescimento | PIB por país ao longo do tempo, os 10 maiores PIBs e o ranking de crescimento dos últimos 10 anos |
+
+## Consultar o banco pelo Claude Code (opcional)
+
+O `docker-compose.yml` traz uma ponte [MCP](https://modelcontextprotocol.io) só de leitura, usada por todas as sessões ([D-076](docs/data-decisions.md)). Para ativar, tire o `#` da linha `COMPOSE_PROFILES=mcp` no `.env`, rode `docker compose up -d --wait` e crie o `.mcp.json` na raiz do projeto, que não é versionado:
+
+```json
+{
+  "mcpServers": {
+    "postgres": { "type": "sse", "url": "http://127.0.0.1:8000/sse" }
+  }
+}
+```

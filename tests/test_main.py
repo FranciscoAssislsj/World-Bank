@@ -41,6 +41,7 @@ def _settings(mocker: MockerFixture) -> MagicMock:
     settings = mocker.MagicMock()
     settings.log_level = "INFO"
     settings.env = "dev"
+    settings.dashboard_database_url = None
     return settings
 
 
