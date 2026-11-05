@@ -69,9 +69,9 @@ As colunas de cada tabela, com tipo de valor e descrição, estão no [dicionár
 
 Cada regra é um arquivo em `sql/quality/`. **Erro** é o que não pode ser verdade, como um percentual acima de 100: a carga é desfeita e nada é publicado. **Aviso** é o que pode ser real e merece atenção: fica registrado em `etl.quality_check`.
 
-Os valores da fonte nunca são alterados na bronze e na silver ([D-052](docs/data-decisions.md)). Ao usar os dados, considere os avisos atuais:
+Os valores da fonte nunca são alterados, e o dado do World Bank é tratado como fiel ([D-052 e D-070](docs/data-decisions.md)). Ao usar os dados, considere os avisos atuais:
 
-- **Valores improváveis (29):** cada caso foi investigado. **27 saem da análise** na gold, porque não são comparáveis: a expectativa de vida da República Centro-Africana em 2009 e 2022, em que a fonte concentra as mortes de uma crise em um único ano, e o CO₂ per capita de Palau, em que as bases divergem. **2 ficam**, porque estão certos: a população do Catar em 2007 e a de Seicheles em 2022. A lista está em `gold.valores_atipicos`, e a investigação, em [data-decisions.md](docs/data-decisions.md).
+- **Valores improváveis (29):** cada caso foi investigado, e todos ficam na gold com o número da fonte e uma marca. Para analisar, prefira `media_sem_atipicos` ou `mediana` em `gold.resumo_renda_regiao`. A média ajustada deixa de fora **27 valores**, que distorcem o grupo: a expectativa de vida da República Centro-Africana em 2009 e 2022 e o CO₂ per capita de Palau, que leva a média do seu grupo de 2,65 para 24,90 em 2012. A população do Catar em 2007 e a de Seicheles em 2022 entram em todas as médias. A lista está em `gold.valores_atipicos`, e a investigação, em [data-decisions.md](docs/data-decisions.md).
 - **Pouca cobertura (76 pares de indicador e ano):** alfabetização, pobreza, Gini e gastos com saúde têm valor em menos da metade dos países em alguns anos, inclusive em 2024.
 - **Sem classificação de renda (129 pares de país e ano).**
 - **Agregado sem nenhum valor (1):** `Not classified`.

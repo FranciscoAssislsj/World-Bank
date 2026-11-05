@@ -2,7 +2,7 @@
 -- Pergunta de negócio: Quais valores foram apontados como estranhos, e o que foi feito com cada um?
 -- Grão (o que é uma linha): um valor apontado, de um país, um indicador e um ano.
 -- Origem: silver.valor_atipico, silver.dim_pais, silver.dim_indicador
--- Regras: só países, sem agregados (D-023). É o aviso das remoções, para os dashboards mostrarem (D-062).
+-- Regras: só países, sem agregados (D-023). É o aviso, para os dashboards mostrarem (D-062).
 -- Chave: pais_iso3, indicador_id, ano
 -- Coluna pais_iso3: Código ISO3 do país.
 -- Coluna pais: Nome do país.
@@ -11,7 +11,7 @@
 -- Coluna ano: Ano do valor.
 -- Coluna valor_original: O valor como está na silver.
 -- Coluna motivo: O limite que o valor ultrapassou.
--- Coluna sai_da_analise: true quando o valor virou NULL em pais_ano e ficou fora de média e mediana (D-062).
+-- Coluna fora_da_media: true quando o valor não entra em media_sem_atipicos; em todo o resto, ele continua (D-062).
 -- Coluna tratamento: O que foi feito com o valor, em uma frase.
 select
     a.pais_iso3,
@@ -21,7 +21,7 @@ select
     a.ano,
     a.valor as valor_original,
     a.motivo,
-    a.sai_da_analise,
+    a.fora_da_media,
     a.tratamento
 from silver.valor_atipico as a
 join silver.dim_pais as p on p.pais_iso3 = a.pais_iso3 and not p.e_agregado

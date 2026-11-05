@@ -2,7 +2,7 @@
 -- Pergunta de negócio: Como PIB per capita, expectativa de vida, eletricidade e internet se relacionam em cada país e ano?
 -- Grão (o que é uma linha): um país em um ano, com um indicador por coluna.
 -- Origem: silver.fato_observacao, silver.dim_pais, silver.dim_regiao, silver.dim_nivel_renda, silver.classificacao_renda_anual, silver.valor_atipico
--- Regras: só países, sem agregados (D-023). A renda é a daquele ano (D-038, D-059). Valor ausente fica NULL, sem preencher (D-042, D-063). Valor que sai da análise vira NULL, só na coluna dele, e motivo_remocao avisa (D-062).
+-- Regras: só países, sem agregados (D-023). A renda é a daquele ano (D-038, D-059). Valor ausente fica NULL, sem preencher (D-042, D-063). Todo valor é o da fonte, e o atípico só ganha uma marca (D-062, D-070).
 -- Chave: pais_iso3, ano
 -- Coluna pais_iso3: Código ISO3 do país.
 -- Coluna pais: Nome do país.
@@ -27,14 +27,14 @@
 -- Coluna acesso_eletricidade_pct: Acesso à eletricidade, em % da população (EG.ELC.ACCS.ZS).
 -- Coluna acesso_internet_pct: Pessoas que usam internet, em % da população (IT.NET.USER.ZS).
 -- Coluna co2_per_capita: CO2 por pessoa, em toneladas de CO2 equivalente (EN.GHG.CO2.PC.CE.AR5).
--- Coluna valores_removidos: Quantos valores desta linha saíram da análise (D-062).
--- Coluna motivo_remocao: Por que saíram; NULL se nenhum saiu (D-062).
+-- Coluna tem_valor_atipico: true quando algum valor desta linha foi apontado como estranho; o motivo diz qual (D-062).
+-- Coluna motivo_atipico: Qual valor foi apontado e por quê; NULL se nenhum foi (D-062).
 with base as (
     select
         f.pais_iso3,
         f.ano,
         f.indicador_id,
-        case when a.pais_iso3 is null then f.valor end as valor,
+        f.valor,
         a.motivo
     from silver.fato_observacao as f
     join silver.dim_pais as p on p.pais_iso3 = f.pais_iso3 and not p.e_agregado
@@ -42,7 +42,6 @@ with base as (
         on a.pais_iso3 = f.pais_iso3
         and a.indicador_id = f.indicador_id
         and a.ano = f.ano
-        and a.sai_da_analise
 )
 select
     p.pais_iso3,
@@ -68,8 +67,8 @@ select
     max(b.valor) filter (where b.indicador_id = 'EG.ELC.ACCS.ZS') as acesso_eletricidade_pct,
     max(b.valor) filter (where b.indicador_id = 'IT.NET.USER.ZS') as acesso_internet_pct,
     max(b.valor) filter (where b.indicador_id = 'EN.GHG.CO2.PC.CE.AR5') as co2_per_capita,
-    count(b.motivo) as valores_removidos,
-    string_agg(b.motivo, '; ' order by b.motivo) as motivo_remocao
+    count(b.motivo) > 0 as tem_valor_atipico,
+    string_agg(b.motivo, '; ' order by b.motivo) as motivo_atipico
 from base as b
 join silver.dim_pais as p on p.pais_iso3 = b.pais_iso3
 join silver.dim_regiao as r on r.regiao_id = p.regiao_id

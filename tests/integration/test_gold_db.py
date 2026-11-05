@@ -145,47 +145,82 @@ def test_resumo_has_exactly_four_cuts_and_no_row_without_income_in_income_cuts(
     assert orphans == (0,)
 
 
-def test_value_over_the_limit_leaves_analysis_but_stays_in_silver_and_sum(
+def test_value_over_the_limit_keeps_source_value_and_leaves_only_adjusted_mean(
     conn: psycopg.Connection,
 ) -> None:
     _set(conn, "BRA", CO2, 2010, 500)
-    _set(conn, "BRA", POP, 2010, None)
     _build(conn)
 
     row = _one(
         conn,
-        "select co2_per_capita, valores_removidos, motivo_remocao from gold.pais_ano"
+        "select co2_per_capita, tem_valor_atipico, motivo_atipico from gold.pais_ano"
         " where pais_iso3 = 'BRA' and ano = 2010",
     )
     summary = _one(
         conn,
-        "select valores_removidos, media < 100 from gold.resumo_renda_regiao"
+        "select valores_fora_da_media, media > media_sem_atipicos,"
+        " media_sem_atipicos < 100, paises_com_valor"
+        " from gold.resumo_renda_regiao"
         " where recorte = 'regiao' and regiao_id = 'LCN' and indicador_id = %s"
         " and ano = 2010",
         CO2,
     )
+    expected_countries = _one(
+        conn,
+        "select count(f.valor) from silver.fato_observacao f"
+        " join silver.dim_pais p using (pais_iso3)"
+        " where p.regiao_id = 'LCN' and f.indicador_id = %s and f.ano = 2010",
+        CO2,
+    )
     warning = _one(
         conn,
-        "select valor_original, sai_da_analise from gold.valores_atipicos"
-        " where pais_iso3 = 'BRA' and indicador_id = %s and ano = 2010",
-        CO2,
-    )
-    silver = _one(
-        conn,
-        "select valor from silver.fato_observacao"
+        "select valor_original, fora_da_media from gold.valores_atipicos"
         " where pais_iso3 = 'BRA' and indicador_id = %s and ano = 2010",
         CO2,
     )
 
-    assert row[0] is None
-    assert row[1] == 1
+    assert row[0] == 500
+    assert row[1] is True
     assert "CO2" in row[2]
-    assert summary == (1, True)
+    assert summary[:3] == (1, True, True)
+    assert summary[3] == expected_countries[0]  # o valor continua contando como dado
     assert warning == (500, True)
-    assert silver == (500,)
 
 
-def test_population_jump_stays_in_analysis_and_leaves_only_the_urban_ranking(
+def test_mean_with_all_values_equals_the_source(conn: psycopg.Connection) -> None:
+    _build(conn)
+
+    row = _one(
+        conn,
+        "select round(g.media, 6), round(g.media_sem_atipicos, 6),"
+        " g.valores_fora_da_media,"
+        " (select round(avg(f.valor), 6) from silver.fato_observacao f"
+        "  join silver.dim_pais p using (pais_iso3)"
+        "  where p.regiao_id = 'EAS' and f.indicador_id = g.indicador_id"
+        "    and f.ano = g.ano)"
+        " from gold.resumo_renda_regiao g"
+        " where g.recorte = 'regiao' and g.regiao_id = 'EAS'"
+        " and g.indicador_id = %s and g.ano = 2012",
+        CO2,
+    )
+
+    assert row[0] == row[3]
+    assert row[1] < row[0]
+    assert row[2] == 1
+
+
+def test_groups_without_outliers_have_equal_means(conn: psycopg.Connection) -> None:
+    _build(conn)
+
+    assert _one(
+        conn,
+        "select count(*) from gold.resumo_renda_regiao"
+        " where valores_fora_da_media = 0"
+        " and media is distinct from media_sem_atipicos",
+    ) == (0,)
+
+
+def test_population_jump_stays_in_every_mean_and_leaves_only_the_urban_ranking(
     conn: psycopg.Connection,
 ) -> None:
     _set(conn, "BRA", POP, 2020, 900_000_000)
@@ -193,7 +228,8 @@ def test_population_jump_stays_in_analysis_and_leaves_only_the_urban_ranking(
 
     row = _one(
         conn,
-        "select populacao from gold.pais_ano where pais_iso3 = 'BRA' and ano = 2020",
+        "select populacao, tem_valor_atipico from gold.pais_ano"
+        " where pais_iso3 = 'BRA' and ano = 2020",
     )
     ranking = _one(
         conn,
@@ -201,19 +237,19 @@ def test_population_jump_stays_in_analysis_and_leaves_only_the_urban_ranking(
         " motivo_remocao, crescimento_pib_real_pct is not null"
         " from gold.ranking_crescimento where pais_iso3 = 'BRA'",
     )
-    removed = _one(
+    out_of_mean = _one(
         conn,
-        "select bool_or(sai_da_analise) from gold.valores_atipicos"
+        "select bool_or(fora_da_media) from gold.valores_atipicos"
         " where pais_iso3 = 'BRA' and indicador_id = %s",
         POP,
     )
 
-    assert row == (900_000_000,)
+    assert row == (900_000_000, True)
     assert ranking[0] is None
     assert ranking[1] is None
     assert "população" in ranking[2]
     assert ranking[3] is True
-    assert removed == (False,)
+    assert out_of_mean == (False,)
 
 
 def test_population_jump_outside_the_window_keeps_the_country_in_ranking(

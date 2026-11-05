@@ -9,7 +9,7 @@ from world_bank.exceptions import ConfigurationError, LoadError
 from world_bank.load.gold import (
     GOLD_DIR,
     GoldView,
-    count_removed_values,
+    count_values_out_of_mean,
     load_views,
     parse_view,
     rebuild_views,
@@ -184,8 +184,8 @@ def test_rebuild_views_turns_database_error_into_load_error() -> None:
         rebuild_views(conn, [_view()])
 
 
-def test_count_removed_values_reads_the_warning_view() -> None:
+def test_count_values_out_of_mean_reads_the_warning_view() -> None:
     conn = MagicMock()
     conn.execute.return_value.fetchone.return_value = (27,)
 
-    assert count_removed_values(conn) == 27
+    assert count_values_out_of_mean(conn) == 27

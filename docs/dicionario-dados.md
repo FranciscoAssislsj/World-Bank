@@ -44,8 +44,8 @@ Como PIB per capita, expectativa de vida, eletricidade e internet se relacionam 
 | `acesso_eletricidade_pct` | número decimal | `numeric` | sim |  | Acesso à eletricidade, em % da população (EG.ELC.ACCS.ZS). |
 | `acesso_internet_pct` | número decimal | `numeric` | sim |  | Pessoas que usam internet, em % da população (IT.NET.USER.ZS). |
 | `co2_per_capita` | número decimal | `numeric` | sim |  | CO2 por pessoa, em toneladas de CO2 equivalente (EN.GHG.CO2.PC.CE.AR5). |
-| `valores_removidos` | número inteiro | `bigint` | sim |  | Quantos valores desta linha saíram da análise (D-062). |
-| `motivo_remocao` | texto | `text` | sim |  | Por que saíram; NULL se nenhum saiu (D-062). |
+| `tem_valor_atipico` | verdadeiro/falso | `boolean` | sim |  | true quando algum valor desta linha foi apontado como estranho; o motivo diz qual (D-062). |
+| `motivo_atipico` | texto | `text` | sim |  | Qual valor foi apontado e por quê; NULL se nenhum foi (D-062). |
 
 ### `gold.ranking_crescimento`
 
@@ -105,13 +105,14 @@ Como cada indicador evolui por nível de renda e por região, incluindo pobreza 
 | `nivel_renda_ordem` | número inteiro | `smallint` | sim |  | Ordem do nível, do menor para o maior, para ordenar gráficos. |
 | `regiao_id` | texto | `text` | sim |  | Código da região; NULL se o recorte não usa região. |
 | `regiao` | texto | `text` | sim |  | Nome da região. |
-| `media` | número decimal | `numeric` | sim |  | Média simples entre os países; cada país pesa igual (D-061). |
-| `mediana` | número decimal | `numeric` | sim |  | Mediana entre os países (D-061). |
-| `paises_com_valor` | número inteiro | `bigint` | sim |  | Quantos países entraram na conta (D-063). |
+| `media` | número decimal | `numeric` | sim |  | Média simples com todos os valores da fonte; cada país pesa igual (D-061). |
+| `media_sem_atipicos` | número decimal | `numeric` | sim |  | Média simples sem os valores que distorcem o grupo; é a recomendada para análise (D-062). |
+| `mediana` | número decimal | `numeric` | sim |  | Mediana com todos os valores da fonte; quase não muda com um valor extremo (D-061). |
+| `paises_com_valor` | número inteiro | `bigint` | sim |  | Quantos países têm valor (D-063). |
 | `paises_no_grupo` | número inteiro | `bigint` | sim |  | Quantos países o grupo tem naquele ano (D-063). |
-| `cobertura_pct` | número decimal | `numeric` | sim |  | Países na conta, em % do grupo (D-063). |
-| `cobertura_baixa` | verdadeiro/falso | `boolean` | sim |  | true quando menos de 50% dos países entraram na conta (D-063). |
-| `valores_removidos` | número inteiro | `bigint` | sim |  | Quantos valores deste grupo saíram da análise (D-062). |
+| `cobertura_pct` | número decimal | `numeric` | sim |  | Países com valor, em % do grupo (D-063). |
+| `cobertura_baixa` | verdadeiro/falso | `boolean` | sim |  | true quando menos de 50% dos países têm valor (D-063). |
+| `valores_fora_da_media` | número inteiro | `bigint` | sim |  | Quantos valores deste grupo não entram em media_sem_atipicos (D-062). |
 | `casas_decimais` | número inteiro | `smallint` | sim |  | Casas sugeridas pela API para exibir o valor (D-047). |
 
 ### `gold.valores_atipicos`
@@ -127,7 +128,7 @@ Quais valores foram apontados como estranhos, e o que foi feito com cada um? Uma
 | `ano` | número inteiro | `smallint` | sim |  | Ano do valor. |
 | `valor_original` | número decimal | `numeric` | sim |  | O valor como está na silver. |
 | `motivo` | texto | `text` | sim |  | O limite que o valor ultrapassou. |
-| `sai_da_analise` | verdadeiro/falso | `boolean` | sim |  | true quando o valor virou NULL em pais_ano e ficou fora de média e mediana (D-062). |
+| `fora_da_media` | verdadeiro/falso | `boolean` | sim |  | true quando o valor não entra em media_sem_atipicos; em todo o resto, ele continua (D-062). |
 | `tratamento` | texto | `text` | sim |  | O que foi feito com o valor, em uma frase. |
 
 ## Camada `silver`
@@ -285,7 +286,7 @@ Uma linha = um valor apontado como estranho, com o motivo e o tratamento (D-062)
 | `ano` | número inteiro | `smallint` | sim |  | Ano do valor. |
 | `valor` | número decimal | `numeric` | sim |  | O valor como está em fato_observacao. |
 | `motivo` | texto | `text` | sim |  | O limite que o valor ultrapassou. |
-| `sai_da_analise` | verdadeiro/falso | `boolean` | sim |  | true: a gold não usa o valor nas estatísticas. false: é só apontado (D-062). |
+| `fora_da_media` | verdadeiro/falso | `boolean` | sim |  | true: o valor não entra em media_sem_atipicos. Em todo o resto, ele continua (D-062). |
 | `tratamento` | texto | `text` | sim |  | O que é feito com o valor, em uma frase. |
 
 ## Camada `bronze`
