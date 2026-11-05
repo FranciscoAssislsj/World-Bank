@@ -1,0 +1,44 @@
+# Conferências rápidas que rodam a cada `git commit`, antes de o código sair da máquina.
+# O motivo de cada escolha está em docs/data-decisions.md (D-075).
+# Ativar uma vez, depois do `uv sync`: uv run pre-commit install
+
+repos:
+  # Ruff pelo uv: usa a versão do uv.lock, a mesma do CI, sem repetir o número aqui.
+  - repo: local
+    hooks:
+      - id: uv-lock-check
+        name: uv.lock em dia com o pyproject
+        entry: uv lock --check
+        language: unsupported
+        files: ^(pyproject\.toml|uv\.lock)$
+        pass_filenames: false
+
+      - id: ruff-check
+        name: ruff check (lint, corrige o que for seguro)
+        entry: uv run ruff check --fix --force-exclude
+        language: unsupported
+        types_or: [python, pyi]
+
+      - id: ruff-format
+        name: ruff format (formatação)
+        entry: uv run ruff format --force-exclude
+        language: unsupported
+        types_or: [python, pyi]
+
+      # Segunda barreira: o .gitignore não impede um `git add -f`.
+      - id: bloquear-env
+        name: bloquear arquivo .env com segredo
+        entry: Arquivo .env nao pode ir para o git. So o .env.example e versionado.
+        language: fail
+        files: (^|/)\.env(\..+)?$
+        exclude: (^|/)\.env\.example$
+
+  # Preso ao hash do commit, como as actions do CI (D-074).
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
+    hooks:
+      - id: detect-private-key
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml

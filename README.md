@@ -89,4 +89,13 @@ uv run pytest -m integration --no-cov # testes contra o PostgreSQL local, com a 
 
 O `--no-cov` existe porque a cobertura mínima vale para os testes unitários. Sem ele, o comando termina com erro mesmo com todos os testes passando.
 
+Para conferir cada commit na sua máquina, ative o [pre-commit](.pre-commit-config.yaml) uma vez, depois do `uv sync`:
+
+```bash
+uv run pre-commit install
+uv run pre-commit run --all-files   # opcional: confere o projeto inteiro agora
+```
+
+Ele roda o Ruff, confere o `uv.lock` e barra arquivo `.env`, chave privada e arquivo grande ([D-075](docs/data-decisions.md)). Se ele corrigir um arquivo, o commit para: rode `git add` nesse arquivo e faça o commit de novo.
+
 O [CI](.github/workflows/ci.yml) roda essas conferências em uma máquina limpa a cada envio para `dev` e `main` e em cada pull request para a `main`. Ele sobe o banco, roda o `run-all` contra a API real e não aceita teste de integração pulado ([D-071 a D-074](docs/data-decisions.md)). Se a API do World Bank estiver fora do ar, o CI fica vermelho sem que o código tenha problema: nesse caso, rode de novo.
