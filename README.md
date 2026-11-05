@@ -71,7 +71,7 @@ Cada regra é um arquivo em `sql/quality/`. **Erro** é o que não pode ser verd
 
 Os valores da fonte nunca são alterados, e o dado do World Bank é tratado como fiel ([D-052 e D-070](docs/data-decisions.md)). Ao usar os dados, considere os avisos atuais:
 
-- **Valores improváveis (29):** cada caso foi investigado, e todos ficam na gold com o número da fonte e uma marca. Para analisar, prefira `media_sem_atipicos` ou `mediana` em `gold.resumo_renda_regiao`. A média ajustada deixa de fora **27 valores**, que distorcem o grupo: a expectativa de vida da República Centro-Africana em 2009 e 2022 e o CO₂ per capita de Palau, que leva a média do seu grupo de 2,65 para 24,90 em 2012. A população do Catar em 2007 e a de Seicheles em 2022 entram em todas as médias. A lista está em `gold.valores_atipicos`, e a investigação, em [data-decisions.md](docs/data-decisions.md).
+- **Valores improváveis (29):** cada caso foi investigado, e todos ficam nas contas, com o número da fonte e uma marca ([D-062](docs/data-decisions.md)). A média de um grupo pequeno pode ser puxada por um deles: em 2012, o CO₂ per capita de Palau leva a média do seu grupo de 9 países a 24,90, com mediana de 1,32. Por isso, `gold.resumo_renda_regiao` traz `mediana` e `valores_atipicos` ao lado de `media`. A lista está em `gold.valores_atipicos`, e a investigação, em [data-decisions.md](docs/data-decisions.md).
 - **Pouca cobertura (76 pares de indicador e ano):** alfabetização, pobreza, Gini e gastos com saúde têm valor em menos da metade dos países em alguns anos, inclusive em 2024.
 - **Sem classificação de renda (129 pares de país e ano).**
 - **Agregado sem nenhum valor (1):** `Not classified`.

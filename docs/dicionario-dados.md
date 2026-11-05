@@ -66,10 +66,9 @@ Quais países mais cresceram na última década, em PIB real e em população ur
 | `posicao_pib_mundo` | número inteiro | `bigint` | sim |  | Posição no mundo, do maior para o menor crescimento; NULL sem crescimento. |
 | `populacao_urbana_inicial` | número decimal | `numeric` | sim |  | População urbana em ano_inicial (D-065). |
 | `populacao_urbana_final` | número decimal | `numeric` | sim |  | População urbana em ano_final (D-065). |
-| `crescimento_populacao_urbana_pct` | número decimal | `numeric` | sim |  | Variação da população urbana na janela, em %; NULL se houver salto de população (D-062). |
+| `crescimento_populacao_urbana_pct` | número decimal | `numeric` | sim |  | Variação da população urbana na janela, em %. |
 | `posicao_populacao_urbana_regiao` | número inteiro | `bigint` | sim |  | Posição na região; NULL sem crescimento. |
 | `posicao_populacao_urbana_mundo` | número inteiro | `bigint` | sim |  | Posição no mundo; NULL sem crescimento. |
-| `motivo_remocao` | texto | `text` | sim |  | Por que o país ficou sem crescimento urbano; NULL se ficou com ele (D-062). |
 
 ### `gold.reconciliacao_agregados`
 
@@ -105,14 +104,13 @@ Como cada indicador evolui por nível de renda e por região, incluindo pobreza 
 | `nivel_renda_ordem` | número inteiro | `smallint` | sim |  | Ordem do nível, do menor para o maior, para ordenar gráficos. |
 | `regiao_id` | texto | `text` | sim |  | Código da região; NULL se o recorte não usa região. |
 | `regiao` | texto | `text` | sim |  | Nome da região. |
-| `media` | número decimal | `numeric` | sim |  | Média simples com todos os valores da fonte; cada país pesa igual (D-061). |
-| `media_sem_atipicos` | número decimal | `numeric` | sim |  | Média simples sem os valores que distorcem o grupo; é a recomendada para análise (D-062). |
-| `mediana` | número decimal | `numeric` | sim |  | Mediana com todos os valores da fonte; quase não muda com um valor extremo (D-061). |
+| `media` | número decimal | `numeric` | sim |  | Média simples com todos os valores da silver; cada país pesa igual (D-061). |
+| `mediana` | número decimal | `numeric` | sim |  | Mediana com todos os valores da silver; quase não muda com um valor extremo (D-061). |
 | `paises_com_valor` | número inteiro | `bigint` | sim |  | Quantos países têm valor (D-063). |
 | `paises_no_grupo` | número inteiro | `bigint` | sim |  | Quantos países o grupo tem naquele ano (D-063). |
 | `cobertura_pct` | número decimal | `numeric` | sim |  | Países com valor, em % do grupo (D-063). |
 | `cobertura_baixa` | verdadeiro/falso | `boolean` | sim |  | true quando menos de 50% dos países têm valor (D-063). |
-| `valores_fora_da_media` | número inteiro | `bigint` | sim |  | Quantos valores deste grupo não entram em media_sem_atipicos (D-062). |
+| `valores_atipicos` | número inteiro | `bigint` | sim |  | Quantos valores deste grupo foram apontados como estranhos; todos entram nas contas (D-062). |
 | `casas_decimais` | número inteiro | `smallint` | sim |  | Casas sugeridas pela API para exibir o valor (D-047). |
 
 ### `gold.valores_atipicos`
@@ -128,7 +126,6 @@ Quais valores foram apontados como estranhos, e o que foi feito com cada um? Uma
 | `ano` | número inteiro | `smallint` | sim |  | Ano do valor. |
 | `valor_original` | número decimal | `numeric` | sim |  | O valor como está na silver. |
 | `motivo` | texto | `text` | sim |  | O limite que o valor ultrapassou. |
-| `fora_da_media` | verdadeiro/falso | `boolean` | sim |  | true quando o valor não entra em media_sem_atipicos; em todo o resto, ele continua (D-062). |
 | `tratamento` | texto | `text` | sim |  | O que foi feito com o valor, em uma frase. |
 
 ## Camada `silver`
@@ -286,7 +283,6 @@ Uma linha = um valor apontado como estranho, com o motivo e o tratamento (D-062)
 | `ano` | número inteiro | `smallint` | sim |  | Ano do valor. |
 | `valor` | número decimal | `numeric` | sim |  | O valor como está em fato_observacao. |
 | `motivo` | texto | `text` | sim |  | O limite que o valor ultrapassou. |
-| `fora_da_media` | verdadeiro/falso | `boolean` | sim |  | true: o valor não entra em media_sem_atipicos. Em todo o resto, ele continua (D-062). |
 | `tratamento` | texto | `text` | sim |  | O que é feito com o valor, em uma frase. |
 
 ## Camada `bronze`

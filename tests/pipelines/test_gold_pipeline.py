@@ -17,7 +17,7 @@ def db(mocker: MockerFixture) -> dict[str, MagicMock]:
         "rebuild": mocker.patch(
             f"{MODULE}.rebuild_views", return_value={"a": 2, "b": 3}
         ),
-        "removed": mocker.patch(f"{MODULE}.count_values_out_of_mean", return_value=27),
+        "removed": mocker.patch(f"{MODULE}.count_flagged_values", return_value=29),
         "start": mocker.patch(f"{TRACKING}.start_pipeline_run", return_value="exec"),
         "finish": mocker.patch(f"{TRACKING}.finish_pipeline_run"),
     }
@@ -35,22 +35,22 @@ def test_success_records_total_rows(db: dict[str, MagicMock]) -> None:
     )
 
 
-def test_values_out_of_mean_are_logged_as_warning(
+def test_flagged_values_are_logged_as_warning(
     db: dict[str, MagicMock], caplog: pytest.LogCaptureFixture
 ) -> None:
     run_gold(MagicMock())
 
-    assert "values left out of the adjusted mean" in caplog.text
+    assert "values flagged as unusual" in caplog.text
 
 
-def test_no_values_out_of_mean_logs_no_warning(
+def test_no_flagged_values_logs_no_warning(
     db: dict[str, MagicMock], caplog: pytest.LogCaptureFixture
 ) -> None:
     db["removed"].return_value = 0
 
     run_gold(MagicMock())
 
-    assert "values left out of the adjusted mean" not in caplog.text
+    assert "values flagged as unusual" not in caplog.text
 
 
 def test_invalid_file_fails_before_rebuilding(db: dict[str, MagicMock]) -> None:

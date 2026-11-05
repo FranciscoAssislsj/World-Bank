@@ -1,8 +1,8 @@
 -- gold.ranking_crescimento
 -- Pergunta de negócio: Quais países mais cresceram na última década, em PIB real e em população urbana, por região?
 -- Grão (o que é uma linha): um país, na janela dos últimos 10 anos com dado.
--- Origem: silver.fato_observacao, silver.dim_pais, silver.dim_regiao, silver.dim_nivel_renda, silver.valor_atipico
--- Regras: só países, sem agregados (D-023). PIB real, com as taxas anuais compostas, e exige os 10 anos (D-064). População urbana = população x percentual urbano (D-065). Salto de população dentro da janela tira o país do ranking urbano (D-062). País sem dado fica na view, sem posição (D-042, D-064).
+-- Origem: silver.fato_observacao, silver.dim_pais, silver.dim_regiao, silver.dim_nivel_renda
+-- Regras: só países, sem agregados (D-023). PIB real, com as taxas anuais compostas, e exige os 10 anos (D-064). População urbana = população x percentual urbano (D-065). Nenhum país sai por ter valor estranho (D-062, D-070). País sem dado fica na view, sem posição (D-042, D-064).
 -- Chave: pais_iso3
 -- Coluna pais_iso3: Código ISO3 do país.
 -- Coluna pais: Nome do país.
@@ -17,10 +17,9 @@
 -- Coluna posicao_pib_mundo: Posição no mundo, do maior para o menor crescimento; NULL sem crescimento.
 -- Coluna populacao_urbana_inicial: População urbana em ano_inicial (D-065).
 -- Coluna populacao_urbana_final: População urbana em ano_final (D-065).
--- Coluna crescimento_populacao_urbana_pct: Variação da população urbana na janela, em %; NULL se houver salto de população (D-062).
+-- Coluna crescimento_populacao_urbana_pct: Variação da população urbana na janela, em %.
 -- Coluna posicao_populacao_urbana_regiao: Posição na região; NULL sem crescimento.
 -- Coluna posicao_populacao_urbana_mundo: Posição no mundo; NULL sem crescimento.
--- Coluna motivo_remocao: Por que o país ficou sem crescimento urbano; NULL se ficou com ele (D-062).
 with janela as (
     select max(f.ano) - 10 as ano_inicial, max(f.ano) as ano_final
     from silver.fato_observacao as f
@@ -54,15 +53,6 @@ urbana as (
       and pop.ano in (j.ano_inicial, j.ano_final)
     group by pop.pais_iso3
 ),
-salto as (
-    select a.pais_iso3, string_agg(a.motivo || ' (' || a.ano || ')', '; ' order by a.ano) as motivo
-    from silver.valor_atipico as a
-    cross join janela as j
-    where a.indicador_id = 'SP.POP.TOTL'
-      and a.ano > j.ano_inicial
-      and a.ano <= j.ano_final
-    group by a.pais_iso3
-),
 calculo as (
     select
         p.pais_iso3,
@@ -77,16 +67,14 @@ calculo as (
             as crescimento_pib_real_pct,
         u.inicial as populacao_urbana_inicial,
         u.final as populacao_urbana_final,
-        case when s.motivo is null and u.inicial > 0 then 100 * (u.final / u.inicial - 1) end
-            as crescimento_populacao_urbana_pct,
-        s.motivo as motivo_remocao
+        case when u.inicial > 0 then 100 * (u.final / u.inicial - 1) end
+            as crescimento_populacao_urbana_pct
     from silver.dim_pais as p
     cross join janela as j
     join silver.dim_regiao as r on r.regiao_id = p.regiao_id
     join silver.dim_nivel_renda as n on n.nivel_renda_id = p.nivel_renda_atual_id
     left join pib on pib.pais_iso3 = p.pais_iso3
     left join urbana as u on u.pais_iso3 = p.pais_iso3
-    left join salto as s on s.pais_iso3 = p.pais_iso3
     where not p.e_agregado
 )
 select
@@ -125,6 +113,5 @@ select
             partition by crescimento_populacao_urbana_pct is null
             order by crescimento_populacao_urbana_pct desc
         )
-    end as posicao_populacao_urbana_mundo,
-    motivo_remocao
+    end as posicao_populacao_urbana_mundo
 from calculo;

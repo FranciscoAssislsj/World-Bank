@@ -11,7 +11,6 @@
 -- Coluna ano: Ano do valor.
 -- Coluna valor_original: O valor como está na silver.
 -- Coluna motivo: O limite que o valor ultrapassou.
--- Coluna fora_da_media: true quando o valor não entra em media_sem_atipicos; em todo o resto, ele continua (D-062).
 -- Coluna tratamento: O que foi feito com o valor, em uma frase.
 select
     a.pais_iso3,
@@ -21,7 +20,6 @@ select
     a.ano,
     a.valor as valor_original,
     a.motivo,
-    a.fora_da_media,
     a.tratamento
 from silver.valor_atipico as a
 join silver.dim_pais as p on p.pais_iso3 = a.pais_iso3 and not p.e_agregado

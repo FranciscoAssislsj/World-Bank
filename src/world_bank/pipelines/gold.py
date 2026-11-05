@@ -4,7 +4,7 @@ import logging
 
 import psycopg
 
-from world_bank.load.gold import count_values_out_of_mean, load_views, rebuild_views
+from world_bank.load.gold import count_flagged_values, load_views, rebuild_views
 from world_bank.pipelines.tracking import tracked_run
 
 logger = logging.getLogger(__name__)
@@ -30,11 +30,11 @@ def run_gold(conn: psycopg.Connection) -> dict[str, int]:
     with tracked_run(conn, PIPELINE, {}) as stats:
         counts = rebuild_views(conn, load_views())
         stats.rows_written = sum(counts.values())
-        out_of_mean = count_values_out_of_mean(conn)
-    if out_of_mean:
+        flagged = count_flagged_values(conn)
+    if flagged:
         logger.warning(
-            "values left out of the adjusted mean",
-            extra={"values": out_of_mean, "see": "gold.valores_atipicos"},
+            "values flagged as unusual",
+            extra={"values": flagged, "see": "gold.valores_atipicos"},
         )
     logger.info("gold built", extra={"views": counts})
     return counts

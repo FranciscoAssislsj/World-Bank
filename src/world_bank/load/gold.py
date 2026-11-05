@@ -202,16 +202,14 @@ def rebuild_views(conn: psycopg.Connection, views: list[GoldView]) -> dict[str, 
     return counts
 
 
-def count_values_out_of_mean(conn: psycopg.Connection) -> int:
-    """Conta os valores que não entram em ``media_sem_atipicos`` (D-062).
+def count_flagged_values(conn: psycopg.Connection) -> int:
+    """Conta os valores apontados como estranhos (D-062).
 
     Args:
         conn: Conexão com o banco.
 
     Returns:
-        A quantidade de valores fora da média ajustada.
+        A quantidade de valores apontados.
     """
-    row = conn.execute(
-        "select count(*) from gold.valores_atipicos where fora_da_media"
-    ).fetchone()
+    row = conn.execute("select count(*) from gold.valores_atipicos").fetchone()
     return row[0]

@@ -145,7 +145,7 @@ def test_resumo_has_exactly_four_cuts_and_no_row_without_income_in_income_cuts(
     assert orphans == (0,)
 
 
-def test_value_over_the_limit_keeps_source_value_and_leaves_only_adjusted_mean(
+def test_value_over_the_limit_is_flagged_and_stays_in_every_calculation(
     conn: psycopg.Connection,
 ) -> None:
     _set(conn, "BRA", CO2, 2010, 500)
@@ -158,23 +158,19 @@ def test_value_over_the_limit_keeps_source_value_and_leaves_only_adjusted_mean(
     )
     summary = _one(
         conn,
-        "select valores_fora_da_media, media > media_sem_atipicos,"
-        " media_sem_atipicos < 100, paises_com_valor"
-        " from gold.resumo_renda_regiao"
-        " where recorte = 'regiao' and regiao_id = 'LCN' and indicador_id = %s"
-        " and ano = 2010",
-        CO2,
-    )
-    expected_countries = _one(
-        conn,
-        "select count(f.valor) from silver.fato_observacao f"
-        " join silver.dim_pais p using (pais_iso3)"
-        " where p.regiao_id = 'LCN' and f.indicador_id = %s and f.ano = 2010",
+        "select g.valores_atipicos, g.media = ("
+        "  select avg(f.valor) from silver.fato_observacao f"
+        "  join silver.dim_pais p using (pais_iso3)"
+        "  where p.regiao_id = 'LCN' and f.indicador_id = g.indicador_id"
+        "    and f.ano = g.ano)"
+        " from gold.resumo_renda_regiao g"
+        " where g.recorte = 'regiao' and g.regiao_id = 'LCN' and g.indicador_id = %s"
+        " and g.ano = 2010",
         CO2,
     )
     warning = _one(
         conn,
-        "select valor_original, fora_da_media from gold.valores_atipicos"
+        "select valor_original from gold.valores_atipicos"
         " where pais_iso3 = 'BRA' and indicador_id = %s and ano = 2010",
         CO2,
     )
@@ -182,45 +178,23 @@ def test_value_over_the_limit_keeps_source_value_and_leaves_only_adjusted_mean(
     assert row[0] == 500
     assert row[1] is True
     assert "CO2" in row[2]
-    assert summary[:3] == (1, True, True)
-    assert summary[3] == expected_countries[0]  # o valor continua contando como dado
-    assert warning == (500, True)
+    assert summary == (1, True)
+    assert warning == (500,)
 
 
-def test_mean_with_all_values_equals_the_source(conn: psycopg.Connection) -> None:
+def test_summary_has_a_single_mean(conn: psycopg.Connection) -> None:
     _build(conn)
 
-    row = _one(
-        conn,
-        "select round(g.media, 6), round(g.media_sem_atipicos, 6),"
-        " g.valores_fora_da_media,"
-        " (select round(avg(f.valor), 6) from silver.fato_observacao f"
-        "  join silver.dim_pais p using (pais_iso3)"
-        "  where p.regiao_id = 'EAS' and f.indicador_id = g.indicador_id"
-        "    and f.ano = g.ano)"
-        " from gold.resumo_renda_regiao g"
-        " where g.recorte = 'regiao' and g.regiao_id = 'EAS'"
-        " and g.indicador_id = %s and g.ano = 2012",
-        CO2,
-    )
+    columns = conn.execute(
+        "select a.attname from pg_attribute a"
+        " where a.attrelid = 'gold.resumo_renda_regiao'::regclass and a.attnum > 0"
+        " and a.attname like 'media%%' and a.attname <> 'mediana'"
+    ).fetchall()
 
-    assert row[0] == row[3]
-    assert row[1] < row[0]
-    assert row[2] == 1
+    assert columns == [("media",)]
 
 
-def test_groups_without_outliers_have_equal_means(conn: psycopg.Connection) -> None:
-    _build(conn)
-
-    assert _one(
-        conn,
-        "select count(*) from gold.resumo_renda_regiao"
-        " where valores_fora_da_media = 0"
-        " and media is distinct from media_sem_atipicos",
-    ) == (0,)
-
-
-def test_population_jump_stays_in_every_mean_and_leaves_only_the_urban_ranking(
+def test_population_jump_is_flagged_and_stays_in_the_urban_ranking(
     conn: psycopg.Connection,
 ) -> None:
     _set(conn, "BRA", POP, 2020, 900_000_000)
@@ -233,35 +207,23 @@ def test_population_jump_stays_in_every_mean_and_leaves_only_the_urban_ranking(
     )
     ranking = _one(
         conn,
-        "select crescimento_populacao_urbana_pct, posicao_populacao_urbana_mundo,"
-        " motivo_remocao, crescimento_pib_real_pct is not null"
+        "select crescimento_populacao_urbana_pct is not null,"
+        " posicao_populacao_urbana_mundo is not null"
         " from gold.ranking_crescimento where pais_iso3 = 'BRA'",
-    )
-    out_of_mean = _one(
-        conn,
-        "select bool_or(fora_da_media) from gold.valores_atipicos"
-        " where pais_iso3 = 'BRA' and indicador_id = %s",
-        POP,
     )
 
     assert row == (900_000_000, True)
-    assert ranking[0] is None
-    assert ranking[1] is None
-    assert "população" in ranking[2]
-    assert ranking[3] is True
-    assert out_of_mean == (False,)
+    assert ranking == (True, True)
 
 
-def test_population_jump_outside_the_window_keeps_the_country_in_ranking(
-    conn: psycopg.Connection,
-) -> None:
+def test_every_country_has_a_urban_ranking_position(conn: psycopg.Connection) -> None:
     _build(conn)
 
     assert _one(
         conn,
-        "select crescimento_populacao_urbana_pct is not null, motivo_remocao"
-        " from gold.ranking_crescimento where pais_iso3 = 'QAT'",
-    ) == (True, None)
+        "select count(*) - count(posicao_populacao_urbana_mundo)"
+        " from gold.ranking_crescimento",
+    ) == (0,)
 
 
 def test_ranking_compounds_growth_and_requires_every_year(
