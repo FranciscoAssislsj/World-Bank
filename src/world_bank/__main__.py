@@ -10,8 +10,10 @@ from world_bank.load.postgres import apply_migrations, connect, list_migrations
 from world_bank.logging_config import configure_logging
 from world_bank.pipelines.bronze import run_bronze
 from world_bank.pipelines.dimensions import run_dimensions
+from world_bank.pipelines.gold import run_gold
 from world_bank.pipelines.observations import run_observations
 from world_bank.pipelines.source_files import run_source_files
+from world_bank.pipelines.tracking import tracked_run
 from world_bank.pipelines.validate import run_validate
 
 logger = logging.getLogger(__name__)
@@ -66,6 +68,23 @@ def build_parser() -> argparse.ArgumentParser:
     validate.add_argument(
         "--end", type=int, help="último ano inspecionado (padrão: config)"
     )
+    commands.add_parser(
+        "build-gold", help="recria as views da gold a partir de sql/gold/"
+    )
+    run_all = commands.add_parser(
+        "run-all", help="roda o pipeline inteiro, da migração até a gold"
+    )
+    run_all.add_argument(
+        "--start", type=int, help="primeiro ano das observações (padrão: config)"
+    )
+    run_all.add_argument(
+        "--end", type=int, help="último ano das observações (padrão: config)"
+    )
+    run_all.add_argument(
+        "--full-refresh",
+        action="store_true",
+        help="processa de novo o fato mesmo que a bronze não tenha mudado",
+    )
     return parser
 
 
@@ -97,15 +116,20 @@ def run_load_bronze(
         start_year: Primeiro ano; ``None`` usa ``settings.start_year``.
         end_year: Último ano; ``None`` usa ``settings.end_year``.
     """
-    with WorldBankClient.from_settings(settings) as client, connect(settings) as conn:
-        run_bronze(
-            client,
-            conn,
-            settings,
-            start_year or settings.start_year,
-            end_year or settings.end_year,
-        )
+    start_year = start_year or settings.start_year
+    end_year = end_year or settings.end_year
+    params = {"period": f"{start_year}:{end_year}"}
+    with (
+        WorldBankClient.from_settings(settings) as client,
+        connect(settings) as conn,
+        tracked_run(conn, "load-bronze", params) as stats,
+    ):
+        results = run_bronze(client, conn, settings, start_year, end_year)
         run_source_files(conn, settings)
+        stats.rows_read = sum(result.records for result in results)
+        stats.rows_written = sum(
+            result.records for result in results if result.status == "inserted"
+        )
 
 
 def run_load_dimensions(settings: Settings) -> None:
@@ -114,8 +138,13 @@ def run_load_dimensions(settings: Settings) -> None:
     Args:
         settings: Configurações (banco e indicadores).
     """
-    with connect(settings) as conn:
-        run_dimensions(conn, settings)
+    with (
+        connect(settings) as conn,
+        tracked_run(conn, "load-dimensions", {}) as stats,
+    ):
+        results = run_dimensions(conn, settings)
+        stats.rows_read = sum(result.rows_read for result in results)
+        stats.rows_written = sum(result.rows_written for result in results)
 
 
 def run_load_observations(
@@ -161,6 +190,41 @@ def run_validate_command(
         )
 
 
+def run_build_gold(settings: Settings) -> None:
+    """Recria as views da gold.
+
+    Args:
+        settings: Configurações com ``DATABASE_URL``.
+    """
+    with connect(settings) as conn:
+        run_gold(conn)
+
+
+def run_all_steps(
+    settings: Settings,
+    start_year: int | None,
+    end_year: int | None,
+    full_refresh: bool,
+) -> None:
+    """Roda o pipeline inteiro e para na primeira falha.
+
+    ``validate`` vem antes de ``build-gold``: uma regra de erro impede a publicação,
+    e os dashboards continuam com a versão anterior (D-068).
+
+    Args:
+        settings: Configurações (API, banco, indicadores e período).
+        start_year: Primeiro ano; ``None`` usa ``settings.start_year``.
+        end_year: Último ano; ``None`` usa ``settings.end_year``.
+        full_refresh: Processa de novo o fato mesmo que a bronze não tenha mudado.
+    """
+    run_migrate(settings)
+    run_load_bronze(settings, start_year, end_year)
+    run_load_dimensions(settings)
+    run_load_observations(settings, start_year, end_year, full_refresh)
+    run_validate_command(settings, start_year, end_year)
+    run_build_gold(settings)
+
+
 def main(argv: list[str] | None = None) -> int:
     """Executa a CLI.
 
@@ -191,6 +255,10 @@ def main(argv: list[str] | None = None) -> int:
             run_load_observations(settings, args.start, args.end, args.full_refresh)
         elif args.command == "validate":
             run_validate_command(settings, args.start, args.end)
+        elif args.command == "build-gold":
+            run_build_gold(settings)
+        elif args.command == "run-all":
+            run_all_steps(settings, args.start, args.end, args.full_refresh)
     except WorldBankError:
         logger.exception("command failed", extra={"command": args.command})
         return 1
