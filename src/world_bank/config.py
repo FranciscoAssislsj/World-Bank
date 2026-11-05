@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     Attributes:
         env: Ambiente ativo (``dev`` ou ``prod``).
         database_url: URL do PostgreSQL (segredo, vem de ``DATABASE_URL``).
+        dashboard_database_url: URL do usuário só de leitura dos dashboards (segredo,
+            vem de ``DASHBOARD_DATABASE_URL``). Opcional: o pipeline não a usa, e o
+            ``migrate`` só tira dela a senha do usuário (D-079).
         api_base_url: URL base da World Bank API v2.
         request_timeout: Timeout de cada requisição HTTP, em segundos.
         per_page: Registros por página pedidos à API.
@@ -57,6 +60,9 @@ class Settings(BaseSettings):
 
     env: Environment = "dev"
     database_url: SecretStr = Field(validation_alias="DATABASE_URL")
+    dashboard_database_url: SecretStr | None = Field(
+        default=None, validation_alias="DASHBOARD_DATABASE_URL"
+    )
     api_base_url: str = "https://api.worldbank.org/v2"
     request_timeout: float = Field(default=30.0, gt=0)
     per_page: int = Field(default=1000, gt=0)

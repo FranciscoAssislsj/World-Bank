@@ -6,7 +6,12 @@ import logging
 from world_bank.config import Settings, load_settings
 from world_bank.exceptions import WorldBankError
 from world_bank.extract.client import WorldBankClient
-from world_bank.load.postgres import apply_migrations, connect, list_migrations
+from world_bank.load.postgres import (
+    apply_migrations,
+    connect,
+    list_migrations,
+    sync_dashboard_password,
+)
 from world_bank.logging_config import configure_logging
 from world_bank.pipelines.bronze import run_bronze
 from world_bank.pipelines.dimensions import run_dimensions
@@ -97,11 +102,13 @@ def run_migrate(settings: Settings) -> None:
     migrations = list_migrations()
     with connect(settings) as conn:
         applied = apply_migrations(conn, migrations)
+        dashboard_password = sync_dashboard_password(conn, settings)
     logger.info(
         "migrate finished",
         extra={
             "applied": len(applied),
             "already_applied": len(migrations) - len(applied),
+            "dashboard_password_set": dashboard_password,
         },
     )
 

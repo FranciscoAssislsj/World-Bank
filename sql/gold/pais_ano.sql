@@ -1,8 +1,8 @@
 -- gold.pais_ano
 -- Pergunta de negócio: Como PIB per capita, expectativa de vida, eletricidade e internet se relacionam em cada país e ano?
 -- Grão (o que é uma linha): um país em um ano, com um indicador por coluna.
--- Origem: silver.fato_observacao, silver.dim_pais, silver.dim_regiao, silver.dim_nivel_renda, silver.classificacao_renda_anual, silver.valor_atipico
--- Regras: só países, sem agregados (D-023). A renda é a daquele ano (D-038, D-059). Valor ausente fica NULL, sem preencher (D-042, D-063). Todo valor é o da fonte, e o atípico só ganha uma marca (D-062, D-070).
+-- Origem: silver.nome_portugues, silver.fato_observacao, silver.dim_pais, silver.dim_regiao, silver.dim_nivel_renda, silver.classificacao_renda_anual, silver.valor_atipico
+-- Regras: Nomes em português, com o original guardado na silver (D-082). só países, sem agregados (D-023). A renda é a daquele ano (D-038, D-059). Valor ausente fica NULL, sem preencher (D-042, D-063). Todo valor é o da fonte, e o atípico só ganha uma marca (D-062, D-070).
 -- Chave: pais_iso3, ano
 -- Coluna pais_iso3: Código ISO3 do país.
 -- Coluna pais: Nome do país.
@@ -45,12 +45,12 @@ with base as (
 )
 select
     p.pais_iso3,
-    p.nome as pais,
+    silver.nome_pt('pais', p.pais_iso3, p.nome) as pais,
     b.ano,
     p.regiao_id,
-    r.nome as regiao,
+    silver.nome_pt('regiao', p.regiao_id, r.nome) as regiao,
     c.nivel_renda_id,
-    n.nome as nivel_renda,
+    silver.nome_pt('renda', c.nivel_renda_id, n.nome) as nivel_renda,
     n.ordem as nivel_renda_ordem,
     max(b.valor) filter (where b.indicador_id = 'SP.POP.TOTL') as populacao,
     max(b.valor) filter (where b.indicador_id = 'SP.URB.TOTL.IN.ZS') as populacao_urbana_pct,

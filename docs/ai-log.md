@@ -119,3 +119,16 @@ Validação executada pela IA: `pre-commit run --all-files` passou sem alterar n
 | Ao inspecionar o `.env`, a IA mascarou só as chaves com `PASSWORD` no nome, e a senha local dentro da `DATABASE_URL` apareceu na saída do comando. | A própria IA viu a saída. | Avisou o responsável. A senha não foi para o repositório, e a troca é decisão dele. |
 
 Validação executada pela IA: dois clientes ao mesmo tempo na ponte leram `gold.pais_ano` (5.425 linhas cada), o `create table` foi recusado nos dois, e a tabela não existe no banco. O `docker compose up` não recriou o banco. Com o `.env.example`, como no CI, o Compose lista só o serviço `postgres`.
+
+## Fase 7 — dashboards (Streamlit)
+
+| O que a IA assumiu ou errou | Como foi descoberto | Correção |
+|---|---|---|
+| A IA considerou o Streamlit pronto porque os testes das páginas passavam, mas o ranking quebrava no navegador: o teste roda o Python, e não desenha o gráfico. | Abrindo a tela em um navegador de verdade. | O gráfico foi reescrito como uma só visão, e cada tela foi conferida por imagem. O CI continua sem desenhar os gráficos. |
+| Um texto com dois `$` virou fórmula matemática na tela. | Na conferência visual. | Uma função protege o `$` nos textos dinâmicos. |
+| O quarto cartão da reconciliação mostrava o ano, e não o desvio do mundo do desenho aprovado. | Comparando a tela com o desenho. | A consulta passou a trazer o valor, e o cartão segue o desenho. |
+| A IA deixou os nomes em inglês por entender que o dado devia aparecer como veio da API, e avisou só como detalhe. | O responsável pediu tudo em português, com termos financeiros. | Tradução em `silver.nome_portugues`, usada pela gold (D-082). |
+| A IA não previu o tamanho do limite do Figma no plano gratuito. Ele chegou depois do layout pronto, e a edição seguinte foi bloqueada. | O Figma recusou a chamada. | As imagens do layout ficaram no repositório. Os nomes novos aparecem nas imagens das telas reais. |
+| A IA tirou várias capturas de tela ao mesmo tempo e viu imagens em branco, que pareciam um erro do dashboard. | O conteúdo da página estava certo, e o tamanho dos arquivos não batia. | As capturas passaram a ser feitas uma de cada vez, depois de a tela desenhar. |
+
+Validação executada pela IA: as 2 telas finais conferidas no navegador, e os números principais comparados com `select` direto na gold nos testes das páginas. O `dashboard_leitor` leu a gold, foi recusado em `silver`, `bronze`, `etl` e em escritas, e a permissão continuou depois de recriar as views. Os testes unitários e de integração, o Ruff e o pre-commit passaram.

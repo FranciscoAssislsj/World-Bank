@@ -77,13 +77,13 @@ A soma dos países bate com o número oficial do World Bank? Uma linha = um agre
 | Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
 |---|---|---|---|---|---|
 | `agregado_id` | texto | `text` | sim |  | Código do agregado na API. |
-| `agregado` | texto | `text` | sim |  | Nome do agregado. |
+| `agregado` | texto | `text` | sim |  | Nome do agregado em português (D-082). |
 | `tipo` | texto | `text` | sim |  | regiao, renda ou mundo. |
 | `indicador_id` | texto | `text` | sim |  | Código do indicador. |
-| `indicador` | texto | `text` | sim |  | Nome do indicador, como vem da API. |
+| `indicador` | texto | `text` | sim |  | Nome do indicador em português (D-082). |
 | `ano` | número inteiro | `smallint` | sim |  | Ano da observação. |
 | `soma_paises` | número decimal | `numeric` | sim |  | Soma calculada a partir dos países. |
-| `valor_oficial` | número decimal | `numeric` | sim |  | Valor do agregado, como vem da API. |
+| `valor_oficial` | número decimal | `numeric` | sim |  | Valor do agregado publicado pela API. |
 | `diferenca` | número decimal | `numeric` | sim |  | soma_paises menos valor_oficial. |
 | `diferenca_pct` | número decimal | `numeric` | sim |  | A diferença, em % do valor oficial. |
 | `paises_sem_valor` | número inteiro | `bigint` | sim |  | Países do grupo sem dado; explica boa parte da diferença no PIB (D-066). |
@@ -98,7 +98,7 @@ Como cada indicador evolui por nível de renda e por região, incluindo pobreza 
 | `recorte` | texto | `text` | sim |  | renda_regiao, renda, regiao ou mundo (D-060). |
 | `ano` | número inteiro | `smallint` | sim |  | Ano da observação. |
 | `indicador_id` | texto | `text` | sim |  | Código do indicador. |
-| `indicador` | texto | `text` | sim |  | Nome do indicador, como vem da API. |
+| `indicador` | texto | `text` | sim |  | Nome do indicador em português (D-082). |
 | `nivel_renda_id` | texto | `text` | sim |  | Nível de renda naquele ano; NULL se o recorte não usa renda. |
 | `nivel_renda` | texto | `text` | sim |  | Nome do nível de renda. |
 | `nivel_renda_ordem` | número inteiro | `smallint` | sim |  | Ordem do nível, do menor para o maior, para ordenar gráficos. |
@@ -122,7 +122,7 @@ Quais valores foram apontados como estranhos, e o que foi feito com cada um? Uma
 | `pais_iso3` | texto | `text` | sim |  | Código ISO3 do país. |
 | `pais` | texto | `text` | sim |  | Nome do país. |
 | `indicador_id` | texto | `text` | sim |  | Código do indicador. |
-| `indicador` | texto | `text` | sim |  | Nome do indicador, como vem da API. |
+| `indicador` | texto | `text` | sim |  | Nome do indicador em português (D-082). |
 | `ano` | número inteiro | `smallint` | sim |  | Ano do valor. |
 | `valor_original` | número decimal | `numeric` | sim |  | O valor como está na silver. |
 | `motivo` | texto | `text` | sim |  | O limite que o valor ultrapassou. |
@@ -260,6 +260,16 @@ Uma linha = o valor de um indicador para um país ou agregado em um ano. Filtre 
 | `casas_decimais` | número inteiro | `smallint` | não |  | Casas sugeridas pela API para exibir o valor; não altera o valor guardado (D-047). |
 | `bronze_run_id` | identificador único | `uuid` | não |  | Carga da bronze de onde a linha veio (D-033). |
 | `atualizado_em` | data e hora | `timestamp with time zone` | não |  | Quando a linha foi criada ou um valor mudou pela última vez (D-033). |
+
+### `silver.nome_portugues`
+
+Nome em português de cada país, região, faixa de renda, indicador e agregado.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `categoria` | texto | `text` | não | PK | pais, regiao, renda, indicador ou agregado. |
+| `codigo` | texto | `text` | não | PK | O código usado pela API. |
+| `nome` | texto | `text` | não |  | O nome mostrado nos dashboards. |
 
 ### `silver.ponte_indicador_topico`
 
