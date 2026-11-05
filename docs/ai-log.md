@@ -69,3 +69,27 @@ Validação executada pela IA: `ruff format` e `ruff check` passaram, o `pytest`
 | A primeira versão da spec previa só o período como parâmetro das regras. Se a lista de indicadores mudasse, um indicador retirado geraria falso erro de completude, e uma carga antiga geraria falsa divergência. | Revisão das consultas ao escrevê-las. | As regras recebem também os indicadores e os endpoints configurados. |
 
 Validação executada pela IA: `ruff format` e `ruff check` passaram, o `pytest` deu **266 passed** com cobertura de **99%**, e o `pytest -m integration` deu **27 passed**, incluindo dado ruim plantado para cada regra de erro e um valor impossível que não chegou a ser publicado, sem deixar linhas no banco. Na primeira execução do `validate`, as 8 regras de erro passaram; os avisos foram `cobertura_baixa` 76, `valor_atipico` 29, `pais_ano_sem_renda` 129 e `entidade_sem_valor` 1. O fato continuou com 99.750 linhas, e a bronze, com 121 páginas.
+
+## Fase 6 — Gold e CLI
+
+| O que a IA assumiu ou errou | Como foi descoberto | Correção |
+|---|---|---|
+| A IA recomendou manter os valores atípicos nas médias e só sinalizá-los, sem medir o efeito. | O responsável questionou. A medição mostrou que Palau leva a média de CO₂ do seu grupo de 9 países de 2,65 para 24,90 em 2012. | Os valores não comparáveis saem da análise e são avisados (D-062). |
+| A IA então propôs remover os 29 valores apontados, tratando os limites como prova de erro. | O responsável pediu que cada caso fosse analisado. A investigação mostrou que o Catar é um boom real e que o valor de Seicheles é a estimativa oficial depois do censo. | Só 27 valores saem da análise; a população fica, e Seicheles sai apenas do ranking urbano (D-062). |
+| A IA disse que a falta de cerca de 23 milhões de pessoas nos agregados "provavelmente" era Taiwan, por dedução. | Consulta à ajuda do World Bank, que confirma que Taiwan não é listada como país e entra nos agregados do mundo e da renda alta. | Registrado na D-066. O valor em si não foi comparado com a fonte de Taiwan. |
+| A spec da Fase 5 previa terminar o `run-all` com `validate`, o que publicaria a gold antes de saber se há erro. | Revisão da ordem ao escrever esta spec. | `validate` roda antes de `build-gold` (D-068). |
+| O plano previa o `create materialized view` dentro do arquivo `.sql`, e a primeira versão da spec também. | O responsável pediu uma única query por arquivo. | O arquivo traz só o cabeçalho e a query, e o Python cria o resto (D-069). |
+| A spec nomeava `tests/pipelines/test_gold.py`, que colide com `tests/load/test_gold.py`, porque `tests/` não é um pacote. | Erro `import file mismatch` no `pytest`. | O arquivo virou `test_gold_pipeline.py`. |
+| Um heredoc do shell quebrou de novo ao editar a spec com um script longo, sem alterar nada. | Erro `unexpected EOF` no shell. | O script foi escrito com a ferramenta de arquivos. |
+
+**Decidido sem confirmar a causa:** Turks e Caicos tem +74,6% em 2017, e o Banco de Desenvolvimento do Caribe dava -1,5%. A diferença não foi explicada, e o responsável decidiu tratar o dado do World Bank como fiel (D-070).
+
+**Em aberto, sem resposta confirmada:**
+
+- **Seicheles:** a origem do valor foi lida só no resumo da busca, porque a página da agência de notícias recusou o acesso direto.
+- **Palau:** o Our World in Data não nomeia, na página consultada, a base dos seus 12,76 t. Por isso a causa da diferença com o EDGAR não foi confirmada.
+
+Validação executada pela IA: `ruff format --check` e `ruff check` passaram, o `pytest` deu **305 passed** com cobertura de **99%**, e o `pytest -m integration` deu **41 passed**. O `run-all` rodou duas vezes contra a API e o banco reais, com código 0; a 2ª execução gravou 0 linhas na silver e deu as mesmas contagens na gold. As consultas de conferência deram o esperado. Cada arquivo de `sql/gold/` também rodou sozinho no `psql`, mas não foi aberto no DBeaver.
+
+Durante o `run-all`, a API trouxe uma mudança real no cadastro de fontes: a bronze passou de 121 para 122 páginas, e 4 linhas de `dim_fonte` mudaram. As observações não mudaram.
+

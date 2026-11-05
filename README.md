@@ -21,6 +21,13 @@ uv run python -m world_bank load-bronze  # grava na bronze as respostas da API e
 uv run python -m world_bank load-dimensions  # grava os cadastros da silver a partir da bronze
 uv run python -m world_bank load-observations  # grava os valores dos indicadores na silver
 uv run python -m world_bank validate  # inspeciona a qualidade da silver
+uv run python -m world_bank build-gold  # recria as views da gold
+```
+
+Ou tudo de uma vez, parando na primeira falha. Uma regra de erro impede a gold de ser recriada ([D-068](docs/data-decisions.md)):
+
+```bash
+uv run python -m world_bank run-all  # aceita --start, --end e --full-refresh
 ```
 
 O banco fica na porta **5433** do computador, e não na 5432, para não conflitar com um PostgreSQL já instalado.
@@ -41,6 +48,11 @@ O banco fica na porta **5433** do computador, e não na 5432, para não conflita
 | `silver.dim_indicador` | uma série de dados |
 | `silver.ponte_indicador_topico` | a ligação entre um indicador e um tema |
 | `silver.fato_observacao` | o valor de um indicador para um país ou agregado em um ano |
+| [`gold.pais_ano`](sql/gold/pais_ano.sql) | um país em um ano, com um indicador por coluna |
+| [`gold.resumo_renda_regiao`](sql/gold/resumo_renda_regiao.sql) | um indicador em um ano, em um recorte de renda, região ou mundo; filtre `recorte` para não contar em dobro |
+| [`gold.ranking_crescimento`](sql/gold/ranking_crescimento.sql) | um país, com o crescimento na última década e a posição |
+| [`gold.reconciliacao_agregados`](sql/gold/reconciliacao_agregados.sql) | a soma dos países contra o número oficial, por agregado, indicador e ano |
+| [`gold.valores_atipicos`](sql/gold/valores_atipicos.sql) | um valor apontado como estranho, com o motivo e o tratamento |
 | `etl.pipeline_run` | uma execução de um comando do pipeline |
 | `etl.quality_check` | o resultado de uma regra de qualidade em uma execução |
 | `etl.schema_migrations` | uma migração de `sql/migrations/` já aplicada |
@@ -57,9 +69,9 @@ As colunas de cada tabela, com tipo de valor e descrição, estão no [dicionár
 
 Cada regra é um arquivo em `sql/quality/`. **Erro** é o que não pode ser verdade, como um percentual acima de 100: a carga é desfeita e nada é publicado. **Aviso** é o que pode ser real e merece atenção: fica registrado em `etl.quality_check`.
 
-Os valores da fonte nunca são alterados ([D-052](docs/data-decisions.md)). Ao usar os dados, considere os avisos atuais:
+Os valores da fonte nunca são alterados na bronze e na silver ([D-052](docs/data-decisions.md)). Ao usar os dados, considere os avisos atuais:
 
-- **Valores improváveis (29):** por exemplo, a expectativa de vida da República Centro-Africana cai de 49,9 em 2008 para 14,7 em 2009 e volta a 46,9 em 2010, e o CO₂ per capita de Palau chega a 202,9.
+- **Valores improváveis (29):** cada caso foi investigado. **27 saem da análise** na gold, porque não são comparáveis: a expectativa de vida da República Centro-Africana em 2009 e 2022, em que a fonte concentra as mortes de uma crise em um único ano, e o CO₂ per capita de Palau, em que as bases divergem. **2 ficam**, porque estão certos: a população do Catar em 2007 e a de Seicheles em 2022. A lista está em `gold.valores_atipicos`, e a investigação, em [data-decisions.md](docs/data-decisions.md).
 - **Pouca cobertura (76 pares de indicador e ano):** alfabetização, pobreza, Gini e gastos com saúde têm valor em menos da metade dos países em alguns anos, inclusive em 2024.
 - **Sem classificação de renda (129 pares de país e ano).**
 - **Agregado sem nenhum valor (1):** `Not classified`.

@@ -14,6 +14,8 @@ from world_bank.load.postgres import connect
 OUTPUT = Path(__file__).resolve().parents[1] / "docs" / "dicionario-dados.md"
 
 SCHEMAS = {
+    "gold": "Indicadores prontos para os dashboards. Cada view vem de um arquivo em "
+    "`sql/gold/`.",
     "silver": "Dado limpo, tipado e ligado por chaves. É a camada para consultar.",
     "bronze": "Dado como veio da fonte, sem alteração. Serve para auditar.",
     "etl": "Controle do pipeline.",
@@ -41,7 +43,8 @@ Colunas de cada tabela, com o tipo de valor e o que significam. Veja também o
 [data-decisions.md](data-decisions.md).
 
 > Gerado por `scripts/gerar_dicionario.py` a partir do banco. Não edite à mão: para
-> mudar uma descrição, altere o `comment on` numa migração e gere de novo.
+> mudar uma descrição, altere o `comment on` numa migração, ou o cabeçalho do arquivo
+> em `sql/gold/`, e gere de novo.
 
 **Como ler:** *PK* identifica a linha. *FK* aponta para outra tabela. *único* não se
 repete. *Vazio?* diz se a coluna aceita ficar sem valor (`NULL`).
@@ -50,7 +53,7 @@ repete. *Vazio?* diz se a coluna aceita ficar sem valor (`NULL`).
 TABLES_SQL = """
     select c.oid, c.relname, obj_description(c.oid)
     from pg_class c join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = %s and c.relkind = 'r'
+    where n.nspname = %s and c.relkind in ('r', 'v', 'm')
     order by c.relname
 """
 

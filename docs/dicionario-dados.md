@@ -5,10 +5,130 @@ Colunas de cada tabela, com o tipo de valor e o que significam. Veja também o
 [data-decisions.md](data-decisions.md).
 
 > Gerado por `scripts/gerar_dicionario.py` a partir do banco. Não edite à mão: para
-> mudar uma descrição, altere o `comment on` numa migração e gere de novo.
+> mudar uma descrição, altere o `comment on` numa migração, ou o cabeçalho do arquivo
+> em `sql/gold/`, e gere de novo.
 
 **Como ler:** *PK* identifica a linha. *FK* aponta para outra tabela. *único* não se
 repete. *Vazio?* diz se a coluna aceita ficar sem valor (`NULL`).
+
+## Camada `gold`
+
+Indicadores prontos para os dashboards. Cada view vem de um arquivo em `sql/gold/`.
+
+### `gold.pais_ano`
+
+Como PIB per capita, expectativa de vida, eletricidade e internet se relacionam em cada país e ano? Uma linha = um país em um ano, com um indicador por coluna.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `pais_iso3` | texto | `text` | sim |  | Código ISO3 do país. |
+| `pais` | texto | `text` | sim |  | Nome do país. |
+| `ano` | número inteiro | `smallint` | sim |  | Ano da observação. |
+| `regiao_id` | texto | `text` | sim |  | Código da região geográfica atual; a fonte não tem histórico. |
+| `regiao` | texto | `text` | sim |  | Nome da região. |
+| `nivel_renda_id` | texto | `text` | sim |  | Nível de renda naquele ano; NULL se o país não foi classificado (D-059). |
+| `nivel_renda` | texto | `text` | sim |  | Nome do nível de renda naquele ano. |
+| `nivel_renda_ordem` | número inteiro | `smallint` | sim |  | Ordem do nível, do menor para o maior, para ordenar gráficos. |
+| `populacao` | número decimal | `numeric` | sim |  | População total (SP.POP.TOTL). |
+| `populacao_urbana_pct` | número decimal | `numeric` | sim |  | População urbana, em % do total (SP.URB.TOTL.IN.ZS). |
+| `expectativa_vida` | número decimal | `numeric` | sim |  | Expectativa de vida ao nascer, em anos (SP.DYN.LE00.IN). |
+| `pib_usd` | número decimal | `numeric` | sim |  | PIB em dólares correntes (NY.GDP.MKTP.CD). |
+| `pib_per_capita_usd` | número decimal | `numeric` | sim |  | PIB per capita em dólares correntes (NY.GDP.PCAP.CD). |
+| `crescimento_pib_pct` | número decimal | `numeric` | sim |  | Crescimento real do PIB no ano, em % (NY.GDP.MKTP.KD.ZG). |
+| `inflacao_pct` | número decimal | `numeric` | sim |  | Inflação ao consumidor no ano, em % (FP.CPI.TOTL.ZG). |
+| `desemprego_pct` | número decimal | `numeric` | sim |  | Desemprego, em % da força de trabalho (SL.UEM.TOTL.ZS). |
+| `pobreza_pct` | número decimal | `numeric` | sim |  | População abaixo da linha de US$ 3,00 por dia, em % (SI.POV.DDAY). |
+| `gini` | número decimal | `numeric` | sim |  | Índice de Gini (SI.POV.GINI). |
+| `alfabetizacao_pct` | número decimal | `numeric` | sim |  | Alfabetização de adultos, em % (SE.ADT.LITR.ZS). |
+| `gasto_saude_pib_pct` | número decimal | `numeric` | sim |  | Gasto corrente em saúde, em % do PIB (SH.XPD.CHEX.GD.ZS). |
+| `acesso_eletricidade_pct` | número decimal | `numeric` | sim |  | Acesso à eletricidade, em % da população (EG.ELC.ACCS.ZS). |
+| `acesso_internet_pct` | número decimal | `numeric` | sim |  | Pessoas que usam internet, em % da população (IT.NET.USER.ZS). |
+| `co2_per_capita` | número decimal | `numeric` | sim |  | CO2 por pessoa, em toneladas de CO2 equivalente (EN.GHG.CO2.PC.CE.AR5). |
+| `valores_removidos` | número inteiro | `bigint` | sim |  | Quantos valores desta linha saíram da análise (D-062). |
+| `motivo_remocao` | texto | `text` | sim |  | Por que saíram; NULL se nenhum saiu (D-062). |
+
+### `gold.ranking_crescimento`
+
+Quais países mais cresceram na última década, em PIB real e em população urbana, por região? Uma linha = um país, na janela dos últimos 10 anos com dado.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `pais_iso3` | texto | `text` | sim |  | Código ISO3 do país. |
+| `pais` | texto | `text` | sim |  | Nome do país. |
+| `regiao_id` | texto | `text` | sim |  | Código da região geográfica atual. |
+| `regiao` | texto | `text` | sim |  | Nome da região. |
+| `nivel_renda_atual_id` | texto | `text` | sim |  | Nível de renda atual; não é o de cada ano da janela (D-025). |
+| `nivel_renda_atual` | texto | `text` | sim |  | Nome do nível de renda atual. |
+| `ano_inicial` | número inteiro | `integer` | sim |  | Ano-base da janela: 10 anos antes de ano_final. |
+| `ano_final` | número inteiro | `smallint` | sim |  | Último ano com crescimento do PIB no fato (D-064). |
+| `crescimento_pib_real_pct` | número decimal | `numeric` | sim |  | Crescimento real do PIB na janela, em %; NULL se faltar um ano (D-064). |
+| `posicao_pib_regiao` | número inteiro | `bigint` | sim |  | Posição na região, do maior para o menor crescimento; NULL sem crescimento. |
+| `posicao_pib_mundo` | número inteiro | `bigint` | sim |  | Posição no mundo, do maior para o menor crescimento; NULL sem crescimento. |
+| `populacao_urbana_inicial` | número decimal | `numeric` | sim |  | População urbana em ano_inicial (D-065). |
+| `populacao_urbana_final` | número decimal | `numeric` | sim |  | População urbana em ano_final (D-065). |
+| `crescimento_populacao_urbana_pct` | número decimal | `numeric` | sim |  | Variação da população urbana na janela, em %; NULL se houver salto de população (D-062). |
+| `posicao_populacao_urbana_regiao` | número inteiro | `bigint` | sim |  | Posição na região; NULL sem crescimento. |
+| `posicao_populacao_urbana_mundo` | número inteiro | `bigint` | sim |  | Posição no mundo; NULL sem crescimento. |
+| `motivo_remocao` | texto | `text` | sim |  | Por que o país ficou sem crescimento urbano; NULL se ficou com ele (D-062). |
+
+### `gold.reconciliacao_agregados`
+
+A soma dos países bate com o número oficial do World Bank? Uma linha = um agregado (região, nível de renda ou mundo), um indicador somável e um ano.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `agregado_id` | texto | `text` | sim |  | Código do agregado na API. |
+| `agregado` | texto | `text` | sim |  | Nome do agregado. |
+| `tipo` | texto | `text` | sim |  | regiao, renda ou mundo. |
+| `indicador_id` | texto | `text` | sim |  | Código do indicador. |
+| `indicador` | texto | `text` | sim |  | Nome do indicador, como vem da API. |
+| `ano` | número inteiro | `smallint` | sim |  | Ano da observação. |
+| `soma_paises` | número decimal | `numeric` | sim |  | Soma calculada a partir dos países. |
+| `valor_oficial` | número decimal | `numeric` | sim |  | Valor do agregado, como vem da API. |
+| `diferenca` | número decimal | `numeric` | sim |  | soma_paises menos valor_oficial. |
+| `diferenca_pct` | número decimal | `numeric` | sim |  | A diferença, em % do valor oficial. |
+| `paises_sem_valor` | número inteiro | `bigint` | sim |  | Países do grupo sem dado; explica boa parte da diferença no PIB (D-066). |
+| `dentro_da_tolerancia` | verdadeiro/falso | `boolean` | sim |  | true quando a diferença é de até 2%; false também se faltar o oficial (D-066). |
+
+### `gold.resumo_renda_regiao`
+
+Como cada indicador evolui por nível de renda e por região, incluindo pobreza e desigualdade? Uma linha = um indicador em um ano, em um recorte (renda_regiao, renda, regiao ou mundo).
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `recorte` | texto | `text` | sim |  | renda_regiao, renda, regiao ou mundo (D-060). |
+| `ano` | número inteiro | `smallint` | sim |  | Ano da observação. |
+| `indicador_id` | texto | `text` | sim |  | Código do indicador. |
+| `indicador` | texto | `text` | sim |  | Nome do indicador, como vem da API. |
+| `nivel_renda_id` | texto | `text` | sim |  | Nível de renda naquele ano; NULL se o recorte não usa renda. |
+| `nivel_renda` | texto | `text` | sim |  | Nome do nível de renda. |
+| `nivel_renda_ordem` | número inteiro | `smallint` | sim |  | Ordem do nível, do menor para o maior, para ordenar gráficos. |
+| `regiao_id` | texto | `text` | sim |  | Código da região; NULL se o recorte não usa região. |
+| `regiao` | texto | `text` | sim |  | Nome da região. |
+| `media` | número decimal | `numeric` | sim |  | Média simples entre os países; cada país pesa igual (D-061). |
+| `mediana` | número decimal | `numeric` | sim |  | Mediana entre os países (D-061). |
+| `paises_com_valor` | número inteiro | `bigint` | sim |  | Quantos países entraram na conta (D-063). |
+| `paises_no_grupo` | número inteiro | `bigint` | sim |  | Quantos países o grupo tem naquele ano (D-063). |
+| `cobertura_pct` | número decimal | `numeric` | sim |  | Países na conta, em % do grupo (D-063). |
+| `cobertura_baixa` | verdadeiro/falso | `boolean` | sim |  | true quando menos de 50% dos países entraram na conta (D-063). |
+| `valores_removidos` | número inteiro | `bigint` | sim |  | Quantos valores deste grupo saíram da análise (D-062). |
+| `casas_decimais` | número inteiro | `smallint` | sim |  | Casas sugeridas pela API para exibir o valor (D-047). |
+
+### `gold.valores_atipicos`
+
+Quais valores foram apontados como estranhos, e o que foi feito com cada um? Uma linha = um valor apontado, de um país, um indicador e um ano.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `pais_iso3` | texto | `text` | sim |  | Código ISO3 do país. |
+| `pais` | texto | `text` | sim |  | Nome do país. |
+| `indicador_id` | texto | `text` | sim |  | Código do indicador. |
+| `indicador` | texto | `text` | sim |  | Nome do indicador, como vem da API. |
+| `ano` | número inteiro | `smallint` | sim |  | Ano do valor. |
+| `valor_original` | número decimal | `numeric` | sim |  | O valor como está na silver. |
+| `motivo` | texto | `text` | sim |  | O limite que o valor ultrapassou. |
+| `sai_da_analise` | verdadeiro/falso | `boolean` | sim |  | true quando o valor virou NULL em pais_ano e ficou fora de média e mediana (D-062). |
+| `tratamento` | texto | `text` | sim |  | O que foi feito com o valor, em uma frase. |
 
 ## Camada `silver`
 
@@ -153,6 +273,20 @@ Uma linha = a ligação de um indicador a um tópico (N:N, D-026).
 | `topico_id` | número inteiro | `integer` | não | PK, FK → `dim_topico.topico_id` | Tópico ligado. |
 | `bronze_run_id` | identificador único | `uuid` | não |  | Carga da bronze de onde a linha veio (D-033). |
 | `atualizado_em` | data e hora | `timestamp with time zone` | não |  | Quando a ligação foi criada (D-033). |
+
+### `silver.valor_atipico`
+
+Uma linha = um valor apontado como estranho, com o motivo e o tratamento (D-062).
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `pais_iso3` | texto | `text` | sim |  | País ou agregado do valor. |
+| `indicador_id` | texto | `text` | sim |  | Indicador do valor. |
+| `ano` | número inteiro | `smallint` | sim |  | Ano do valor. |
+| `valor` | número decimal | `numeric` | sim |  | O valor como está em fato_observacao. |
+| `motivo` | texto | `text` | sim |  | O limite que o valor ultrapassou. |
+| `sai_da_analise` | verdadeiro/falso | `boolean` | sim |  | true: a gold não usa o valor nas estatísticas. false: é só apontado (D-062). |
+| `tratamento` | texto | `text` | sim |  | O que é feito com o valor, em uma frase. |
 
 ## Camada `bronze`
 
