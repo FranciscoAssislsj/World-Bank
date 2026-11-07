@@ -297,7 +297,7 @@ def _upsert_statements(conn: MagicMock) -> list[str]:
 def test_upsert_rows_skips_database_when_there_are_no_rows() -> None:
     conn = MagicMock()
 
-    assert upsert_rows(conn, "dim_regiao", ["regiao_id"], []) == 0
+    assert upsert_rows(conn, "regiao", ["regiao_id"], []) == 0
     conn.cursor.assert_not_called()
 
 
@@ -308,7 +308,7 @@ def test_upsert_rows_copies_values_in_column_order() -> None:
     run_id = uuid4()
     rows = [{"regiao_id": "AAA", "nome": "Região", "bronze_run_id": run_id}]
 
-    upsert_rows(conn, "dim_regiao", ["regiao_id"], rows)
+    upsert_rows(conn, "regiao", ["regiao_id"], rows)
 
     copy.write_row.assert_called_once_with(["AAA", "Região", run_id])
 
@@ -328,7 +328,7 @@ def test_upsert_rows_only_updates_when_data_columns_change() -> None:
     conn = MagicMock()
     rows = [{"regiao_id": "AAA", "nome": "Região", "bronze_run_id": uuid4()}]
 
-    upsert_rows(conn, "dim_regiao", ["regiao_id"], rows)
+    upsert_rows(conn, "regiao", ["regiao_id"], rows)
 
     insert = _upsert_statements(conn)[1]
     assert 'on conflict ("regiao_id") do update' in insert
@@ -353,8 +353,8 @@ def test_upsert_rows_returns_rows_written_and_drops_staging() -> None:
     cursor.rowcount = 3
     rows = [{"regiao_id": "AAA", "nome": "Região"}]
 
-    assert upsert_rows(conn, "dim_regiao", ["regiao_id"], rows) == 3
-    assert _upsert_statements(conn)[-1] == 'drop table "stg_dim_regiao"'
+    assert upsert_rows(conn, "regiao", ["regiao_id"], rows) == 3
+    assert _upsert_statements(conn)[-1] == 'drop table "stg_regiao"'
 
 
 def test_delete_missing_links_sends_indicators_and_links() -> None:

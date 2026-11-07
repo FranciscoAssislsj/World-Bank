@@ -54,7 +54,7 @@ def _region(run_id: UUID, name: str = "Região Teste") -> dict[str, Any]:
 
 def _region_row(conn: psycopg.Connection) -> tuple[Any, ...] | None:
     return conn.execute(
-        "select nome, bronze_run_id from silver.dim_regiao where regiao_id = 'T01'"
+        "select nome, bronze_run_id from silver.regiao where regiao_id = 'T01'"
     ).fetchone()
 
 
@@ -81,10 +81,10 @@ def test_upsert_twice_keeps_row_and_run_id(conn: psycopg.Connection) -> None:
     first_run = uuid4()
 
     with conn.transaction(force_rollback=True):
-        assert upsert_rows(conn, "dim_regiao", ["regiao_id"], [_region(first_run)]) == 1
+        assert upsert_rows(conn, "regiao", ["regiao_id"], [_region(first_run)]) == 1
 
         # Mesmo conteúdo vindo de outra carga não é mudança (D-033).
-        written = upsert_rows(conn, "dim_regiao", ["regiao_id"], [_region(uuid4())])
+        written = upsert_rows(conn, "regiao", ["regiao_id"], [_region(uuid4())])
 
         assert written == 0
         assert _region_row(conn) == ("Região Teste", first_run)
@@ -94,10 +94,10 @@ def test_upsert_updates_row_when_value_changes(conn: psycopg.Connection) -> None
     second_run = uuid4()
 
     with conn.transaction(force_rollback=True):
-        upsert_rows(conn, "dim_regiao", ["regiao_id"], [_region(uuid4())])
+        upsert_rows(conn, "regiao", ["regiao_id"], [_region(uuid4())])
 
         written = upsert_rows(
-            conn, "dim_regiao", ["regiao_id"], [_region(second_run, "Novo Nome")]
+            conn, "regiao", ["regiao_id"], [_region(second_run, "Novo Nome")]
         )
 
         assert written == 1
@@ -106,17 +106,17 @@ def test_upsert_updates_row_when_value_changes(conn: psycopg.Connection) -> None
 
 def test_real_country_without_region_is_rejected(conn: psycopg.Connection) -> None:
     with (
-        pytest.raises(psycopg.errors.CheckViolation, match="dim_pais_agregado_ck"),
+        pytest.raises(psycopg.errors.CheckViolation, match="pais_agregado_ck"),
         conn.transaction(),
     ):
-        upsert_rows(conn, "dim_pais", ["pais_iso3"], [_country(uuid4())])
+        upsert_rows(conn, "pais", ["pais_iso3"], [_country(uuid4())])
 
 
 def test_aggregate_with_null_keys_is_accepted(conn: psycopg.Connection) -> None:
     row = _country(uuid4(), e_agregado=True, tipo_agregado="outro")
 
     with conn.transaction(force_rollback=True):
-        assert upsert_rows(conn, "dim_pais", ["pais_iso3"], [row]) == 1
+        assert upsert_rows(conn, "pais", ["pais_iso3"], [row]) == 1
 
 
 def test_failure_in_last_table_undoes_previous_tables(
@@ -128,10 +128,8 @@ def test_failure_in_last_table_undoes_previous_tables(
         pytest.raises(psycopg.errors.ForeignKeyViolation),
         conn.transaction(),
     ):
-        upsert_rows(conn, "dim_regiao", ["regiao_id"], [_region(uuid4())])
-        upsert_rows(
-            conn, "ponte_indicador_topico", ["indicador_id", "topico_id"], [link]
-        )
+        upsert_rows(conn, "regiao", ["regiao_id"], [_region(uuid4())])
+        upsert_rows(conn, "indicador_topico", ["indicador_id", "topico_id"], [link])
 
     assert _region_row(conn) is None
 
@@ -169,15 +167,15 @@ def test_links_removed_from_source_are_deleted_and_kept_ones_stay(
     ]
 
     with conn.transaction(force_rollback=True):
-        upsert_rows(conn, "dim_fonte", ["fonte_id"], [source])
-        upsert_rows(conn, "dim_topico", ["topico_id"], topics)
-        upsert_rows(conn, "dim_indicador", ["indicador_id"], [indicator])
-        upsert_rows(conn, "ponte_indicador_topico", key, links)
+        upsert_rows(conn, "fonte", ["fonte_id"], [source])
+        upsert_rows(conn, "topico", ["topico_id"], topics)
+        upsert_rows(conn, "indicador", ["indicador_id"], [indicator])
+        upsert_rows(conn, "indicador_topico", key, links)
 
         deleted = delete_missing_links(conn, ["T.01"], [("T.01", -1)])
 
         remaining = conn.execute(
-            "select topico_id, bronze_run_id from silver.ponte_indicador_topico"
+            "select topico_id, bronze_run_id from silver.indicador_topico"
             " where indicador_id = 'T.01'"
         ).fetchall()
         assert deleted == 1

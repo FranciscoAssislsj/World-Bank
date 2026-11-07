@@ -1,10 +1,10 @@
 -- pergunta: Há país ou indicador que sumiu da carga mais recente da bronze?
 -- severidade: aviso
 -- grupo: geral
--- origem: bronze.api_response, silver.dim_pais, silver.dim_indicador
+-- origem: bronze.api_response, silver.pais, silver.indicador
 -- decisao: D-021
 select 'pais' as tipo, p.pais_iso3 as codigo
-from silver.dim_pais p
+from silver.pais p
 where not exists (
     select 1
     from bronze.api_response a
@@ -17,7 +17,7 @@ where not exists (
 )
 union all
 select 'indicador', i.indicador_id
-from silver.dim_indicador i
+from silver.indicador i
 where not exists (
     select 1 from bronze.api_response a
     where a.endpoint = 'indicator/' || i.indicador_id

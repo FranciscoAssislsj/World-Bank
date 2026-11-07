@@ -1,7 +1,7 @@
 -- pergunta: Há linha do fato no período que sumiu da bronze?
 -- severidade: aviso
 -- grupo: geral
--- origem: bronze.api_response, silver.fato_observacao
+-- origem: bronze.api_response, silver.observacao
 -- decisao: D-021
 with ultima as (
     select endpoint, max(ingested_at) as ingested_at
@@ -21,8 +21,8 @@ registros as (
     where a.params ->> 'date' = %(period)s
 )
 select f.pais_iso3, f.indicador_id, f.ano
-from silver.fato_observacao f
-join silver.dim_pais p using (pais_iso3)
+from silver.observacao f
+join silver.pais p using (pais_iso3)
 where f.indicador_id = any(%(indicators)s)
   and f.ano between %(start_year)s and %(end_year)s
   and not exists (

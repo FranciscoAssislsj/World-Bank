@@ -90,7 +90,7 @@ def test_writes_in_one_transaction_and_records_success(
     assert (result.status, result.rows_read, result.rows_written) == ("success", 1, 1)
     conn.transaction.assert_called_once_with()
     args = db["upsert"].call_args.args
-    assert args[1:3] == ("fato_observacao", ("pais_iso3", "indicador_id", "ano"))
+    assert args[1:3] == ("observacao", ("pais_iso3", "indicador_id", "ano"))
     db["start"].assert_called_once_with(
         conn,
         "load-observations",

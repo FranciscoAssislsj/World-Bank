@@ -89,7 +89,7 @@ def test_notes_without_code_are_ignored(make_income_workbook: MakeWorkbook) -> N
 def test_unknown_code_fails(make_income_workbook: MakeWorkbook) -> None:
     content = make_income_workbook([["XZZ", "Nova", "L", "L"], ["XAA", "T", "L", "L"]])
 
-    with pytest.raises(SchemaValidationError, match="'XZZ' não está em dim_pais"):
+    with pytest.raises(SchemaValidationError, match="'XZZ' não está em pais"):
         transform_income_history(content, ["XAA"])
 
 

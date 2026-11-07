@@ -1,7 +1,7 @@
 -- pergunta: Algum valor do período difere da carga mais recente da bronze?
 -- severidade: erro
 -- grupo: fato
--- origem: bronze.api_response, silver.fato_observacao
+-- origem: bronze.api_response, silver.observacao
 -- decisao: D-043
 with ultima as (
     select endpoint, max(ingested_at) as ingested_at
@@ -22,8 +22,8 @@ registros as (
 )
 select b.pais_iso2, b.indicador_id, b.ano, b.valor as valor_bronze, f.valor as valor_silver
 from registros b
-left join silver.dim_pais p on p.pais_iso2 = b.pais_iso2
-left join silver.fato_observacao f
+left join silver.pais p on p.pais_iso2 = b.pais_iso2
+left join silver.observacao f
     on f.pais_iso3 = p.pais_iso3
     and f.indicador_id = b.indicador_id
     and f.ano = b.ano

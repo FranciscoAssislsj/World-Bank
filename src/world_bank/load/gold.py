@@ -17,6 +17,8 @@ GOLD_DIR = Path(__file__).resolve().parents[3] / "sql" / "gold"
 SCHEMA = "gold"
 
 _HEADER_LINE = re.compile(r"^-- (?P<key>[^:]+): (?P<value>.+)$")
+# O número define a ordem: a estrela nasce antes das tabelas que a leem (D-088).
+_FILE_NAME = re.compile(r"^\d{2}_(?P<name>[a-z0-9_]+)$")
 _COLUMN_KEY = "Coluna "
 _REQUIRED_KEYS = {
     "Pergunta de negócio",
@@ -99,25 +101,31 @@ def parse_view(name: str, text: str) -> GoldView:
 
 
 def load_views(directory: Path = GOLD_DIR) -> list[GoldView]:
-    """Lê as views do diretório, em ordem de nome.
+    """Lê as views do diretório, na ordem do número no início do nome (D-088).
 
-    A ordem não importa, porque cada view lê só a silver (D-057).
+    A estrela vem primeiro, porque as tabelas de consumo a leem (D-087).
 
     Args:
-        directory: Diretório com os arquivos ``.sql``.
+        directory: Diretório com os arquivos ``NN_nome.sql``.
 
     Returns:
-        As views.
+        As views, na ordem de criação.
 
     Raises:
-        ConfigurationError: Se algum arquivo for inválido ou não houver nenhum.
+        ConfigurationError: Se um arquivo não tiver o número, repetir um nome, for
+            inválido, ou se não houver nenhum.
     """
-    views = [
-        parse_view(path.stem, path.read_text(encoding="utf-8"))
-        for path in sorted(directory.glob("*.sql"))
-    ]
+    views = []
+    for path in sorted(directory.glob("*.sql")):
+        match = _FILE_NAME.match(path.stem)
+        if match is None:
+            raise ConfigurationError(f"gold {path.name}: use o nome NN_nome.sql")
+        views.append(parse_view(match["name"], path.read_text(encoding="utf-8")))
     if not views:
         raise ConfigurationError(f"nenhuma view da gold em {directory}")
+    names = [view.name for view in views]
+    if repeated := sorted({name for name in names if names.count(name) > 1}):
+        raise ConfigurationError(f"gold com nomes repetidos: {repeated}")
     return views
 
 
@@ -189,7 +197,7 @@ def rebuild_views(conn: psycopg.Connection, views: list[GoldView]) -> dict[str, 
             ).fetchall()
             for (name,) in existing:
                 conn.execute(
-                    sql.SQL("drop materialized view {view}").format(
+                    sql.SQL("drop materialized view if exists {view} cascade").format(
                         view=sql.Identifier(SCHEMA, name)
                     )
                 )

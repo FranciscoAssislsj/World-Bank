@@ -1,7 +1,7 @@
 # Dicionário de dados
 
 Colunas de cada tabela, com o tipo de valor e o que significam. Veja também o
-[diagrama das ligações](modelagem-silver.svg) e os motivos das decisões em
+[diagrama das ligações](modelagem-gold.svg) e os motivos das decisões em
 [data-decisions.md](data-decisions.md).
 
 > Gerado por `scripts/gerar_dicionario.py` a partir do banco. Não edite à mão: para
@@ -13,7 +13,122 @@ repete. *Vazio?* diz se a coluna aceita ficar sem valor (`NULL`).
 
 ## Camada `gold`
 
-Indicadores prontos para os dashboards. Cada view vem de um arquivo em `sql/gold/`.
+Modelo estrela e indicadores prontos para os dashboards. Cada view vem de um arquivo em `sql/gold/`.
+
+### `gold.dim_fonte`
+
+De quais bases do World Bank vêm os dados? Uma linha = uma base de dados do World Bank.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `fonte_id` | número inteiro | `integer` | sim |  | Código da base na API. |
+| `codigo` | texto | `text` | sim |  | Sigla da base. |
+| `nome` | texto | `text` | sim |  | Nome como veio da API. |
+| `conceitos` | número inteiro | `integer` | sim |  | Quantos conceitos a base tem. |
+| `ultima_atualizacao` | data | `date` | sim |  | Data da última atualização informada pela fonte. |
+| `tem_dados` | verdadeiro/falso | `boolean` | sim |  | true se a base traz dados. |
+| `tem_metadados` | verdadeiro/falso | `boolean` | sim |  | true se a base traz metadados; NULL se a fonte não informa. |
+
+### `gold.dim_indicador`
+
+Quais indicadores são medidos, e de que fonte? Uma linha = uma série de dados.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `indicador_id` | texto | `text` | sim |  | Código do indicador. |
+| `nome` | texto | `text` | sim |  | Nome em português (D-082). |
+| `nome_original` | texto | `text` | sim |  | Nome como veio da API. |
+| `fonte_id` | número inteiro | `integer` | sim |  | Base de onde vem. |
+| `descricao` | texto | `text` | sim |  | Descrição do indicador. |
+| `organizacao_fonte` | texto | `text` | sim |  | Organização que produz o dado. |
+
+### `gold.dim_nivel_renda`
+
+Quais níveis de renda existem, e em que ordem? Uma linha = um nível de renda ou um agrupamento de níveis.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `nivel_renda_id` | texto | `text` | sim |  | Código do nível de renda na API. |
+| `nome` | texto | `text` | sim |  | Nome em português (D-082). |
+| `nome_original` | texto | `text` | sim |  | Nome como veio da API. |
+| `nivel_renda_iso2` | texto | `text` | sim |  | Código ISO2 do nível. |
+| `ordem` | número inteiro | `smallint` | sim |  | Ordem do menor para o maior; NULL em agrupamentos (D-034). |
+| `e_agrupamento` | verdadeiro/falso | `boolean` | sim |  | true quando junta outros níveis, para não contar em dobro (D-034). |
+
+### `gold.dim_pais`
+
+Quais países e agregados existem, e a que grupos pertencem? Uma linha = um país ou um agregado.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `pais_iso3` | texto | `text` | sim |  | Código ISO3 do país ou agregado. |
+| `nome` | texto | `text` | sim |  | Nome em português (D-082). |
+| `nome_original` | texto | `text` | sim |  | Nome como veio da API. |
+| `pais_iso2` | texto | `text` | sim |  | Código ISO2. |
+| `regiao_id` | texto | `text` | sim |  | Região geográfica atual; NULL em agregados (D-017). |
+| `nivel_renda_atual_id` | texto | `text` | sim |  | Nível de renda atual; NULL em agregados (D-017, D-025). |
+| `tipo_emprestimo_atual_id` | texto | `text` | sim |  | Tipo de empréstimo atual; NULL em agregados (D-017, D-025). |
+| `regiao_administrativa_id` | texto | `text` | sim |  | Região administrativa do World Bank (D-034). |
+| `capital` | texto | `text` | sim |  | Capital. |
+| `latitude` | número decimal | `numeric` | sim |  | Latitude. |
+| `longitude` | número decimal | `numeric` | sim |  | Longitude. |
+| `e_agregado` | verdadeiro/falso | `boolean` | sim |  | true para agregado, false para país (D-017). |
+| `tipo_agregado` | texto | `text` | sim |  | Tipo do agregado; NULL em países (D-034). |
+
+### `gold.dim_regiao`
+
+Quais regiões e agrupamentos existem? Uma linha = uma região geográfica ou um agrupamento de países.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `regiao_id` | texto | `text` | sim |  | Código da região na API. |
+| `nome` | texto | `text` | sim |  | Nome em português (D-082). |
+| `nome_original` | texto | `text` | sim |  | Nome como veio da API. |
+| `regiao_iso2` | texto | `text` | sim |  | Código ISO2 da região. |
+| `e_geografica` | verdadeiro/falso | `boolean` | sim |  | true para região geográfica, false para agrupamento administrativo. |
+
+### `gold.dim_tipo_emprestimo`
+
+Quais tipos de empréstimo existem? Uma linha = um tipo de empréstimo do World Bank.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `tipo_emprestimo_id` | texto | `text` | sim |  | Código do tipo na API. |
+| `nome` | texto | `text` | sim |  | Nome como veio da API. |
+| `tipo_emprestimo_iso2` | texto | `text` | sim |  | Código ISO2 do tipo. |
+
+### `gold.dim_topico`
+
+Em quais temas os indicadores se organizam? Uma linha = um tema dos indicadores.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `topico_id` | número inteiro | `integer` | sim |  | Código do tema na API. |
+| `nome` | texto | `text` | sim |  | Nome como veio da API. |
+| `descricao` | texto | `text` | sim |  | Descrição do tema. |
+
+### `gold.fato_observacao`
+
+Qual o valor de cada indicador, em cada país ou agregado, em cada ano? Uma linha = o valor de um indicador para um país ou agregado em um ano.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `pais_iso3` | texto | `text` | sim |  | País ou agregado medido. |
+| `indicador_id` | texto | `text` | sim |  | Indicador medido. |
+| `ano` | número inteiro | `smallint` | sim |  | Ano da observação. |
+| `valor` | número decimal | `numeric` | sim |  | Valor medido, sem arredondamento; NULL quando a fonte não tem o dado (D-042). |
+| `casas_decimais` | número inteiro | `smallint` | sim |  | Casas decimais sugeridas pela fonte (D-047). |
+
+### `gold.fato_renda_anual`
+
+Em que nível de renda cada país estava em cada ano? Uma linha = a classificação oficial de renda de um país para um ano.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `pais_iso3` | texto | `text` | sim |  | País classificado. |
+| `ano_referencia` | número inteiro | `smallint` | sim |  | Ano da renda usada na classificação; é o ano para ligar às observações (D-038). |
+| `ano_fiscal` | número inteiro | `smallint` | sim |  | Ano fiscal do World Bank em que a classificação vigorou. |
+| `nivel_renda_id` | texto | `text` | sim |  | Nível de renda do país naquele ano. |
 
 ### `gold.pais_ano`
 
@@ -46,6 +161,17 @@ Como PIB per capita, expectativa de vida, eletricidade e internet se relacionam 
 | `co2_per_capita` | número decimal | `numeric` | sim |  | CO2 por pessoa, em toneladas de CO2 equivalente (EN.GHG.CO2.PC.CE.AR5). |
 | `tem_valor_atipico` | verdadeiro/falso | `boolean` | sim |  | true quando algum valor desta linha foi apontado como estranho; o motivo diz qual (D-062). |
 | `motivo_atipico` | texto | `text` | sim |  | Qual valor foi apontado e por quê; NULL se nenhum foi (D-062). |
+| `grupo_grafico` | texto | `text` | sim |  | Cor do país nos gráficos: Brasil, Valor atípico ou a faixa de renda do ano (D-084, D-085). |
+| `grupo_grafico_ordem` | número inteiro | `integer` | sim |  | Ordem do grupo no gráfico: da menor renda à maior, com o Brasil por último, para ficar à frente das outras bolhas (D-084, D-085). |
+
+### `gold.ponte_indicador_topico`
+
+Em quais temas cada indicador está? Uma linha = a ligação entre um indicador e um tema.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `indicador_id` | texto | `text` | sim |  | Indicador. |
+| `topico_id` | número inteiro | `integer` | sim |  | Tema. |
 
 ### `gold.ranking_crescimento`
 
@@ -89,6 +215,26 @@ A soma dos países bate com o número oficial do World Bank? Uma linha = um agre
 | `paises_sem_valor` | número inteiro | `bigint` | sim |  | Países do grupo sem dado; explica boa parte da diferença no PIB (D-066). |
 | `dentro_da_tolerancia` | verdadeiro/falso | `boolean` | sim |  | true quando a diferença é de até 2%; false também se faltar o oficial (D-066). |
 
+### `gold.resumo_anual`
+
+Em cada ano, quantos países têm dado, quanto a renda muda a expectativa de vida, quem tem o maior PIB e onde o Brasil está? Uma linha = um ano.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `ano` | número inteiro | `smallint` | sim |  | Ano da observação; serve de filtro de ano no Power BI. |
+| `paises_com_valor` | número inteiro | `bigint` | sim |  | Países com expectativa de vida neste ano. |
+| `paises_no_grupo` | número inteiro | `bigint` | sim |  | Total de países neste ano. |
+| `cobertura_pct` | número decimal | `numeric` | sim |  | paises_com_valor em % de paises_no_grupo. |
+| `mediana_renda_alta` | número decimal | `numeric` | sim |  | Mediana da expectativa de vida dos países de renda alta, em anos. |
+| `mediana_renda_baixa` | número decimal | `numeric` | sim |  | Mediana da expectativa de vida dos países de renda baixa, em anos. |
+| `diferenca_renda_anos` | número decimal | `numeric` | sim |  | Renda alta menos renda baixa, em anos; NULL se faltar uma delas. |
+| `maior_pib_pais` | texto | `text` | sim |  | País com o maior PIB nominal do ano. |
+| `maior_pib_bilhoes` | número decimal | `numeric` | sim |  | PIB nominal desse país, em US$ bilhões. |
+| `brasil_expectativa_vida` | número decimal | `numeric` | sim |  | Expectativa de vida no Brasil, em anos. |
+| `brasil_pib_per_capita_usd` | número decimal | `numeric` | sim |  | PIB per capita nominal do Brasil, em dólares correntes. |
+| `brasil_pib_bilhoes` | número decimal | `numeric` | sim |  | PIB nominal do Brasil, em US$ bilhões. |
+| `brasil_posicao_pib` | número inteiro | `bigint` | sim |  | Posição do Brasil no PIB nominal mundial do ano. |
+
 ### `gold.resumo_renda_regiao`
 
 Como cada indicador evolui por nível de renda e por região, incluindo pobreza e desigualdade? Uma linha = um indicador em um ano, em um recorte (renda_regiao, renda, regiao ou mundo).
@@ -130,7 +276,7 @@ Quais valores foram apontados como estranhos, e o que foi feito com cada um? Uma
 
 ## Camada `silver`
 
-Dado limpo, tipado e ligado por chaves. É a camada para consultar.
+Tratamento: dado limpo, tipado e ligado por chaves.
 
 ### `silver.classificacao_renda_anual`
 
@@ -138,14 +284,14 @@ Uma linha = a classificação oficial de renda de um país para um ano (D-038).
 
 | Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
 |---|---|---|---|---|---|
-| `pais_iso3` | texto | `text` | não | PK, FK → `dim_pais.pais_iso3` | País classificado. |
+| `pais_iso3` | texto | `text` | não | PK, FK → `pais.pais_iso3` | País classificado. |
 | `ano_referencia` | número inteiro | `smallint` | não | PK | Ano da renda usada na classificação. É o ano para ligar às observações (D-038). |
 | `ano_fiscal` | número inteiro | `smallint` | não |  | Ano fiscal do World Bank em que a classificação vigorou. |
-| `nivel_renda_id` | texto | `text` | não | FK → `dim_nivel_renda.nivel_renda_id` | Nível de renda do país naquele ano. |
+| `nivel_renda_id` | texto | `text` | não | FK → `nivel_renda.nivel_renda_id` | Nível de renda do país naquele ano. |
 | `bronze_run_id` | identificador único | `uuid` | não |  | Carga da bronze de onde a linha veio (D-033). |
 | `atualizado_em` | data e hora | `timestamp with time zone` | não |  | Quando a linha foi criada ou um valor mudou pela última vez (D-033). |
 
-### `silver.dim_fonte`
+### `silver.fonte`
 
 Uma linha = uma base de dados do World Bank.
 
@@ -161,7 +307,7 @@ Uma linha = uma base de dados do World Bank.
 | `bronze_run_id` | identificador único | `uuid` | não |  | Carga da bronze de onde a linha veio (D-033). |
 | `atualizado_em` | data e hora | `timestamp with time zone` | não |  | Quando a linha foi criada ou um valor mudou pela última vez (D-033). |
 
-### `silver.dim_indicador`
+### `silver.indicador`
 
 Uma linha = uma série de dados. Só os indicadores configurados (D-022).
 
@@ -169,13 +315,24 @@ Uma linha = uma série de dados. Só os indicadores configurados (D-022).
 |---|---|---|---|---|---|
 | `indicador_id` | texto | `text` | não | PK | Código do indicador (ex.: SP.POP.TOTL). |
 | `nome` | texto | `text` | não |  | Nome do indicador, como veio da API. |
-| `fonte_id` | número inteiro | `integer` | não | FK → `dim_fonte.fonte_id` | Fonte do indicador. |
+| `fonte_id` | número inteiro | `integer` | não | FK → `fonte.fonte_id` | Fonte do indicador. |
 | `descricao` | texto | `text` | sim |  | Descrição; NULL se vazia. |
 | `organizacao_fonte` | texto | `text` | sim |  | Organização que produz o dado; NULL se vazia. |
 | `bronze_run_id` | identificador único | `uuid` | não |  | Carga da bronze de onde a linha veio (D-033). |
 | `atualizado_em` | data e hora | `timestamp with time zone` | não |  | Quando a linha foi criada ou um valor mudou pela última vez (D-033). |
 
-### `silver.dim_nivel_renda`
+### `silver.indicador_topico`
+
+Uma linha = a ligação de um indicador a um tópico (N:N, D-026).
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `indicador_id` | texto | `text` | não | PK, FK → `indicador.indicador_id` | Indicador ligado. |
+| `topico_id` | número inteiro | `integer` | não | PK, FK → `topico.topico_id` | Tópico ligado. |
+| `bronze_run_id` | identificador único | `uuid` | não |  | Carga da bronze de onde a linha veio (D-033). |
+| `atualizado_em` | data e hora | `timestamp with time zone` | não |  | Quando a ligação foi criada (D-033). |
+
+### `silver.nivel_renda`
 
 Uma linha = um nível de renda ou um agrupamento de níveis.
 
@@ -189,7 +346,31 @@ Uma linha = um nível de renda ou um agrupamento de níveis.
 | `bronze_run_id` | identificador único | `uuid` | não |  | Carga da bronze de onde a linha veio (D-033). |
 | `atualizado_em` | data e hora | `timestamp with time zone` | não |  | Quando a linha foi criada ou um valor mudou pela última vez (D-033). |
 
-### `silver.dim_pais`
+### `silver.nome_portugues`
+
+Nome em português de cada país, região, faixa de renda, indicador e agregado.
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `categoria` | texto | `text` | não | PK | pais, regiao, renda, indicador ou agregado. |
+| `codigo` | texto | `text` | não | PK | O código usado pela API. |
+| `nome` | texto | `text` | não |  | O nome mostrado nos dashboards. |
+
+### `silver.observacao`
+
+Uma linha = o valor de um indicador para um país ou agregado em um ano. Filtre pais.e_agregado para não somar os dois (D-040).
+
+| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
+|---|---|---|---|---|---|
+| `pais_iso3` | texto | `text` | não | PK, FK → `pais.pais_iso3` | País ou agregado medido (D-041). |
+| `indicador_id` | texto | `text` | não | PK, FK → `indicador.indicador_id` | Indicador medido. |
+| `ano` | número inteiro | `smallint` | não | PK | Ano da observação. |
+| `valor` | número decimal | `numeric` | sim |  | Valor medido, sem arredondamento; NULL quando a fonte não tem o dado (D-042, D-043). |
+| `casas_decimais` | número inteiro | `smallint` | não |  | Casas sugeridas pela API para exibir o valor; não altera o valor guardado (D-047). |
+| `bronze_run_id` | identificador único | `uuid` | não |  | Carga da bronze de onde a linha veio (D-033). |
+| `atualizado_em` | data e hora | `timestamp with time zone` | não |  | Quando a linha foi criada ou um valor mudou pela última vez (D-033). |
+
+### `silver.pais`
 
 Uma linha = um país ou um agregado. Filtre e_agregado para não somar os dois (D-023).
 
@@ -198,10 +379,10 @@ Uma linha = um país ou um agregado. Filtre e_agregado para não somar os dois (
 | `pais_iso3` | texto | `text` | não | PK | Código de 3 caracteres (campo id da API). |
 | `pais_iso2` | texto | `text` | não | único | Código de 2 caracteres; liga as observações sem ISO3 (Fase 4). |
 | `nome` | texto | `text` | não |  | Nome do país ou agregado, como veio da API. |
-| `regiao_id` | texto | `text` | sim | FK → `dim_regiao.regiao_id` | Região geográfica; NULL em agregados (D-017). |
-| `nivel_renda_atual_id` | texto | `text` | sim | FK → `dim_nivel_renda.nivel_renda_id` | Classificação de renda ATUAL, não a de cada ano; NULL em agregados (D-017, D-025). |
-| `tipo_emprestimo_atual_id` | texto | `text` | sim | FK → `dim_tipo_emprestimo.tipo_emprestimo_id` | Tipo de empréstimo ATUAL, não o de cada ano; NULL em agregados (D-017, D-025). |
-| `regiao_administrativa_id` | texto | `text` | sim | FK → `dim_regiao.regiao_id` | Região sem os países de renda alta; NULL nos demais casos (D-034). |
+| `regiao_id` | texto | `text` | sim | FK → `regiao.regiao_id` | Região geográfica; NULL em agregados (D-017). |
+| `nivel_renda_atual_id` | texto | `text` | sim | FK → `nivel_renda.nivel_renda_id` | Classificação de renda ATUAL, não a de cada ano; NULL em agregados (D-017, D-025). |
+| `tipo_emprestimo_atual_id` | texto | `text` | sim | FK → `tipo_emprestimo.tipo_emprestimo_id` | Tipo de empréstimo ATUAL, não o de cada ano; NULL em agregados (D-017, D-025). |
+| `regiao_administrativa_id` | texto | `text` | sim | FK → `regiao.regiao_id` | Região sem os países de renda alta; NULL nos demais casos (D-034). |
 | `capital` | texto | `text` | sim |  | Capital; NULL se a API não informa. |
 | `latitude` | número decimal | `numeric` | sim |  | Latitude; NULL se a API não informa. |
 | `longitude` | número decimal | `numeric` | sim |  | Longitude; NULL se a API não informa. |
@@ -210,7 +391,7 @@ Uma linha = um país ou um agregado. Filtre e_agregado para não somar os dois (
 | `bronze_run_id` | identificador único | `uuid` | não |  | Carga da bronze de onde a linha veio (D-033). |
 | `atualizado_em` | data e hora | `timestamp with time zone` | não |  | Quando a linha foi criada ou um valor mudou pela última vez (D-033). |
 
-### `silver.dim_regiao`
+### `silver.regiao`
 
 Uma linha = uma região geográfica ou um agrupamento de países.
 
@@ -223,7 +404,7 @@ Uma linha = uma região geográfica ou um agrupamento de países.
 | `bronze_run_id` | identificador único | `uuid` | não |  | Carga da bronze de onde a linha veio (D-033). |
 | `atualizado_em` | data e hora | `timestamp with time zone` | não |  | Quando a linha foi criada ou um valor mudou pela última vez (D-033). |
 
-### `silver.dim_tipo_emprestimo`
+### `silver.tipo_emprestimo`
 
 Uma linha = um tipo de empréstimo do World Bank.
 
@@ -235,7 +416,7 @@ Uma linha = um tipo de empréstimo do World Bank.
 | `bronze_run_id` | identificador único | `uuid` | não |  | Carga da bronze de onde a linha veio (D-033). |
 | `atualizado_em` | data e hora | `timestamp with time zone` | não |  | Quando a linha foi criada ou um valor mudou pela última vez (D-033). |
 
-### `silver.dim_topico`
+### `silver.topico`
 
 Uma linha = um tema dos indicadores.
 
@@ -247,41 +428,6 @@ Uma linha = um tema dos indicadores.
 | `bronze_run_id` | identificador único | `uuid` | não |  | Carga da bronze de onde a linha veio (D-033). |
 | `atualizado_em` | data e hora | `timestamp with time zone` | não |  | Quando a linha foi criada ou um valor mudou pela última vez (D-033). |
 
-### `silver.fato_observacao`
-
-Uma linha = o valor de um indicador para um país ou agregado em um ano. Filtre dim_pais.e_agregado para não somar os dois (D-040).
-
-| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
-|---|---|---|---|---|---|
-| `pais_iso3` | texto | `text` | não | PK, FK → `dim_pais.pais_iso3` | País ou agregado medido (D-041). |
-| `indicador_id` | texto | `text` | não | PK, FK → `dim_indicador.indicador_id` | Indicador medido. |
-| `ano` | número inteiro | `smallint` | não | PK | Ano da observação. |
-| `valor` | número decimal | `numeric` | sim |  | Valor medido, sem arredondamento; NULL quando a fonte não tem o dado (D-042, D-043). |
-| `casas_decimais` | número inteiro | `smallint` | não |  | Casas sugeridas pela API para exibir o valor; não altera o valor guardado (D-047). |
-| `bronze_run_id` | identificador único | `uuid` | não |  | Carga da bronze de onde a linha veio (D-033). |
-| `atualizado_em` | data e hora | `timestamp with time zone` | não |  | Quando a linha foi criada ou um valor mudou pela última vez (D-033). |
-
-### `silver.nome_portugues`
-
-Nome em português de cada país, região, faixa de renda, indicador e agregado.
-
-| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
-|---|---|---|---|---|---|
-| `categoria` | texto | `text` | não | PK | pais, regiao, renda, indicador ou agregado. |
-| `codigo` | texto | `text` | não | PK | O código usado pela API. |
-| `nome` | texto | `text` | não |  | O nome mostrado nos dashboards. |
-
-### `silver.ponte_indicador_topico`
-
-Uma linha = a ligação de um indicador a um tópico (N:N, D-026).
-
-| Coluna | Tipo de valor | Tipo no banco | Vazio? | Chave | Descrição |
-|---|---|---|---|---|---|
-| `indicador_id` | texto | `text` | não | PK, FK → `dim_indicador.indicador_id` | Indicador ligado. |
-| `topico_id` | número inteiro | `integer` | não | PK, FK → `dim_topico.topico_id` | Tópico ligado. |
-| `bronze_run_id` | identificador único | `uuid` | não |  | Carga da bronze de onde a linha veio (D-033). |
-| `atualizado_em` | data e hora | `timestamp with time zone` | não |  | Quando a ligação foi criada (D-033). |
-
 ### `silver.valor_atipico`
 
 Uma linha = um valor apontado como estranho, com o motivo e o tratamento (D-062).
@@ -291,7 +437,7 @@ Uma linha = um valor apontado como estranho, com o motivo e o tratamento (D-062)
 | `pais_iso3` | texto | `text` | sim |  | País ou agregado do valor. |
 | `indicador_id` | texto | `text` | sim |  | Indicador do valor. |
 | `ano` | número inteiro | `smallint` | sim |  | Ano do valor. |
-| `valor` | número decimal | `numeric` | sim |  | O valor como está em fato_observacao. |
+| `valor` | número decimal | `numeric` | sim |  | O valor como está em silver.observacao. |
 | `motivo` | texto | `text` | sim |  | O limite que o valor ultrapassou. |
 | `tratamento` | texto | `text` | sim |  | O que é feito com o valor, em uma frase. |
 

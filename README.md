@@ -40,31 +40,44 @@ O banco fica na porta **5433** do computador, e não na 5432, para não conflita
 |---|---|
 | `bronze.api_response` | uma página de resposta da API, com o JSON original em `payload` |
 | `bronze.source_file` | uma versão de um arquivo baixado fora da API, sem alteração |
-| `silver.dim_regiao` | uma região geográfica ou um agrupamento de países |
-| `silver.dim_nivel_renda` | um nível de renda ou um agrupamento de níveis |
-| `silver.dim_tipo_emprestimo` | um tipo de empréstimo do World Bank |
-| `silver.dim_pais` | um país ou um agregado |
+| `silver.regiao` | uma região geográfica ou um agrupamento de países, já tratado |
+| `silver.nivel_renda` | um nível de renda ou um agrupamento de níveis, já tratado |
+| `silver.tipo_emprestimo` | um tipo de empréstimo do World Bank, já tratado |
+| `silver.pais` | um país ou um agregado, já tratado |
 | `silver.classificacao_renda_anual` | a classificação oficial de renda de um país em um ano |
-| `silver.dim_fonte` | uma base de dados do World Bank |
-| `silver.dim_topico` | um tema dos indicadores |
-| `silver.dim_indicador` | uma série de dados |
-| `silver.ponte_indicador_topico` | a ligação entre um indicador e um tema |
-| `silver.fato_observacao` | o valor de um indicador para um país ou agregado em um ano |
-| [`gold.pais_ano`](sql/gold/pais_ano.sql) | um país em um ano, com um indicador por coluna |
-| [`gold.resumo_renda_regiao`](sql/gold/resumo_renda_regiao.sql) | um indicador em um ano, em um recorte de renda, região ou mundo; filtre `recorte` para não contar em dobro |
-| [`gold.ranking_crescimento`](sql/gold/ranking_crescimento.sql) | um país, com o crescimento na última década e a posição |
-| [`gold.reconciliacao_agregados`](sql/gold/reconciliacao_agregados.sql) | a soma dos países contra o número oficial, por agregado, indicador e ano |
-| [`gold.valores_atipicos`](sql/gold/valores_atipicos.sql) | um valor apontado como estranho, com o motivo e o tratamento |
+| `silver.fonte` | uma base de dados do World Bank, já tratada |
+| `silver.topico` | um tema dos indicadores, já tratado |
+| `silver.indicador` | uma série de dados, já tratada |
+| `silver.indicador_topico` | a ligação entre um indicador e um tema |
+| `silver.observacao` | o valor de um indicador para um país ou agregado em um ano, já tratado |
 | `silver.nome_portugues` | o nome em português de um código da API ([D-082](docs/data-decisions.md)) |
+| [`gold.dim_regiao`](sql/gold/01_dim_regiao.sql) | uma região ou um agrupamento de países |
+| [`gold.dim_nivel_renda`](sql/gold/02_dim_nivel_renda.sql) | um nível de renda ou um agrupamento de níveis |
+| [`gold.dim_tipo_emprestimo`](sql/gold/03_dim_tipo_emprestimo.sql) | um tipo de empréstimo |
+| [`gold.dim_fonte`](sql/gold/04_dim_fonte.sql) | uma base de dados do World Bank |
+| [`gold.dim_topico`](sql/gold/05_dim_topico.sql) | um tema dos indicadores |
+| [`gold.dim_pais`](sql/gold/06_dim_pais.sql) | um país ou um agregado |
+| [`gold.dim_indicador`](sql/gold/07_dim_indicador.sql) | uma série de dados |
+| [`gold.ponte_indicador_topico`](sql/gold/08_ponte_indicador_topico.sql) | a ligação entre um indicador e um tema |
+| [`gold.fato_observacao`](sql/gold/09_fato_observacao.sql) | o valor de um indicador para um país ou agregado em um ano |
+| [`gold.fato_renda_anual`](sql/gold/10_fato_renda_anual.sql) | a classificação oficial de renda de um país em um ano |
+| [`gold.valores_atipicos`](sql/gold/11_valores_atipicos.sql) | um valor apontado como estranho, com o motivo e o tratamento |
+| [`gold.pais_ano`](sql/gold/20_pais_ano.sql) | um país em um ano, com um indicador por coluna |
+| [`gold.resumo_renda_regiao`](sql/gold/21_resumo_renda_regiao.sql) | um indicador em um ano, em um recorte de renda, região ou mundo; filtre `recorte` para não contar em dobro |
+| [`gold.resumo_anual`](sql/gold/22_resumo_anual.sql) | um ano, com os números dos cartões dos dashboards |
+| [`gold.ranking_crescimento`](sql/gold/23_ranking_crescimento.sql) | um país, com o crescimento na última década e a posição |
+| [`gold.reconciliacao_agregados`](sql/gold/24_reconciliacao_agregados.sql) | a soma dos países contra o número oficial, por agregado, indicador e ano |
 | `etl.pipeline_run` | uma execução de um comando do pipeline |
 | `etl.quality_check` | o resultado de uma regra de qualidade em uma execução |
 | `etl.schema_migrations` | uma migração de `sql/migrations/` já aplicada |
 
 ## Modelo de dados
 
-![Diagrama da camada silver: fato_observacao liga dim_pais e dim_indicador; dim_pais liga-se a dim_regiao, dim_nivel_renda, dim_tipo_emprestimo e classificacao_renda_anual; dim_indicador liga-se a dim_fonte e, pela ponte_indicador_topico, a dim_topico.](docs/modelagem-silver.svg)
+![Modelo estrela da gold: fato_observacao liga dim_pais e dim_indicador; fato_renda_anual liga dim_pais e dim_nivel_renda; dim_pais liga-se a dim_regiao, dim_nivel_renda e dim_tipo_emprestimo; dim_indicador liga-se a dim_fonte e, pela ponte_indicador_topico, a dim_topico](docs/modelagem-gold.svg)
 
-`fato_observacao` guarda os valores e liga países e indicadores. Ao somar, filtre `dim_pais.e_agregado`, para não contar países e agregados juntos. Para a renda de um país em um ano, use `classificacao_renda_anual`.
+Cada camada tem um papel ([D-087](docs/data-decisions.md)): a **bronze** guarda o dado como veio, a **silver** trata (tipos, chaves e duplicatas), e a **gold** publica o modelo estrela e as tabelas prontas para os dashboards. As tabelas de consumo leem só a estrela da gold.
+
+`fato_observacao` guarda os valores e liga países e indicadores. Ao somar, filtre `dim_pais.e_agregado`, para não contar países e agregados juntos. Para a renda de um país em um ano, use `fato_renda_anual`.
 
 As colunas de cada tabela, com tipo de valor e descrição, estão no [dicionário de dados](docs/dicionario-dados.md).
 
@@ -114,6 +127,16 @@ uv run --group dashboard streamlit run dashboard/app.py   # abre em http://local
 |---|---|
 | Renda e qualidade de vida | Países analisados, expectativa de vida por faixa de renda e PIB per capita × expectativa de vida |
 | PIB e crescimento | PIB por país ao longo do tempo, os 10 maiores PIBs e o ranking de crescimento dos últimos 10 anos |
+
+### Power BI
+
+O relatório está em [`dashboard/powerbi/`](dashboard/powerbi/), como projeto `.pbip`: texto que o git consegue comparar ([D-086](docs/data-decisions.md)). Ele não guarda dados nem senha.
+
+1. Com o banco ligado, abra `dashboard/powerbi/world_bank.pbip` no Power BI Desktop.
+2. Clique em **Atualizar** e aprove as consultas ao banco.
+3. Na credencial do banco, escolha **Banco de dados**, com o usuário `dashboard_leitor` e a senha de `DASHBOARD_DATABASE_URL`. Se o programa avisar sobre conexão sem criptografia, aceite: o banco só existe na sua máquina.
+
+Para mudar o endereço do banco, altere os parâmetros `ServidorBanco` e `NomeBanco`, em **Transformar dados**. As imagens das telas estão em [docs/dashboard/powerbi/](docs/dashboard/powerbi/).
 
 ## Consultar o banco pelo Claude Code (opcional)
 

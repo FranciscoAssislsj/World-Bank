@@ -67,7 +67,7 @@ def test_le_a_gold(leitor: psycopg.Connection) -> None:
 
 
 @pytest.mark.parametrize(
-    "tabela", ["silver.fato_observacao", "bronze.api_response", "etl.pipeline_run"]
+    "tabela", ["silver.observacao", "bronze.api_response", "etl.pipeline_run"]
 )
 def test_nao_le_outras_camadas(leitor: psycopg.Connection, tabela: str) -> None:
     with pytest.raises(psycopg.errors.InsufficientPrivilege):
