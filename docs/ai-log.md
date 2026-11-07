@@ -140,3 +140,15 @@ Validação executada pela IA: dois clientes ao mesmo tempo na ponte leram `gold
 Validação executada pela IA no Power BI: cartões, títulos, Top 10 e ranking comparados com o banco e com o Streamlit, em 2023/2024 e com 2010 e Sul da Ásia pré-selecionados.
 
 Validação executada pela IA: as 2 telas finais conferidas no navegador, e os números principais comparados com `select` direto na gold nos testes das páginas. O `dashboard_leitor` leu a gold, foi recusado em `silver`, `bronze`, `etl` e em escritas, e a permissão continuou depois de recriar as views. Os testes unitários e de integração, o Ruff e o pre-commit passaram.
+
+## Fase 8 — Documentação
+
+| O que a IA assumiu ou errou | Como foi descoberto | Correção |
+|---|---|---|
+| A primeira versão da spec montava o site em dois lugares: no CI e no workflow de publicação. | Ao escrever o workflow, depois que o responsável pediu a publicação. | O build ficou só no workflow de documentação, e a spec foi ajustada. |
+| A IA supôs nomes de colunas ao consultar `etl.quality_check` e `gold.dim_indicador`, e usou `max` em uma coluna `uuid`, em vez de olhar o dicionário antes. | Erros do banco nas 3 consultas, que só liam dados. | As colunas foram lidas do catálogo, e os números da documentação vieram das consultas corrigidas. |
+| Um comando com um `python` vazio no início travou o shell, e as edições seguintes do mesmo comando não rodaram. A IA viu o arquivo vazio de saída antes de perceber. | A spec continuava como rascunho depois do comando. | O comando foi parado, e as edições foram refeitas com a ferramenta de arquivos. |
+| A documentação não dizia que a gold fica em **Materialized Views**. Sem isso, as dimensões parecem não estar na gold quando se olha a pasta **Tables** no DBeaver. | O responsável perguntou se as dims ainda estavam na silver. | A consulta ao catálogo confirmou as dims na gold, e o README e a página de Arquitetura passaram a explicar onde achá-las. |
+| A IA explicou essa dúvida só pela pasta do DBeaver, e a explicação estava incompleta: as dims também não apareciam em **Materialized Views**, onde o DBeaver mostrava só 5 das 16 tabelas. A lista batia com a da Fase 6, o que aponta para uma lista antiga na memória do programa. | Print do DBeaver enviado pelo responsável, e consulta pelo mesmo endereço, que mostrou as 16. | A página de Arquitetura passou a indicar o **F5**. |
+
+Validação executada pela IA: `ruff format --check`, `ruff check` e o pre-commit passaram, o `pytest` deu **429 passed** com cobertura de **99,58%**, o `pytest -m integration` deu **66 passed**, e `mkdocs build --strict` passou. Páginas de Arquitetura, Decisões e Dashboards conferidas no navegador. Os avisos citados em `docs/quality.md` foram comparados com `etl.quality_check`, e o comando de conferência de `docs/installation.md` foi executado.

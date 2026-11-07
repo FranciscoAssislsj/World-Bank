@@ -1,0 +1,63 @@
+# Monta o site de documentação em todo envio e publica no GitHub Pages só a partir da main.
+# O motivo de cada escolha está em docs/data-decisions.md (D-090 e D-091).
+
+name: Documentação
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Só leitura por padrão: a permissão de publicar fica apenas na etapa que publica.
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_LOCKED: "1" # falha se o uv.lock estiver desatualizado em relação ao pyproject
+
+jobs:
+  montar:
+    name: Montar o site
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+
+      - name: Instalar o Python e as dependências
+        run: uv sync
+
+      - name: Montar o site, falhando em qualquer aviso
+        run: uv run mkdocs build --strict
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        with:
+          path: site
+
+  publicar:
+    name: Publicar no GitHub Pages
+    needs: montar
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      pages: write
+      id-token: write # prova ao GitHub Pages que o envio veio deste workflow
+    environment:
+      name: github-pages
+      url: ${{ steps.publicacao.outputs.page_url }}
+    steps:
+      - id: publicacao
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

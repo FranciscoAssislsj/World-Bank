@@ -22,7 +22,7 @@ DIMENSION_PATHS: dict[str, str] = {
     "topic": "topic",
 }
 
-# Limites da API (doc_api.md §7): até 60 indicadores por requisição e URL de até
+# Limites da API (docs/data-sources.md): até 60 indicadores por requisição e URL de até
 # 4000 caracteres. 3000 caracteres de códigos deixam folga para o resto da URL.
 MAX_INDICATORS_PER_REQUEST = 60
 MAX_INDICATOR_CHARS = 3000

@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 500" width="1160" height="500" role="img" aria-labelledby="t d" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace">
+  <title id="t">O caminho do dado, da fonte aos dashboards</title>
+  <desc id="d">A API do World Bank e o arquivo OGHIST alimentam a bronze, que guarda o dado como veio. A silver trata o dado. O validate confere a silver com 16 regras: um erro impede a publicação. A gold publica o modelo estrela e as tabelas de consumo, lidas pelo Streamlit e pelo Power BI com o usuário dashboard_leitor. O schema etl registra as execuções.</desc>
+  <defs>
+    <marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#46564d"/>
+    </marker>
+  </defs>
+  <rect x="0.5" y="0.5" width="1159" height="499" rx="14" fill="#f7faf7" stroke="#d5dcd6"/>
+  <text x="40" y="44" font-size="20" font-weight="700" fill="#1f2a24">O caminho do dado</text>
+
+  <!-- Fontes -->
+  <text x="115" y="88" font-size="12.5" font-weight="700" fill="#2f6f55" text-anchor="middle">FONTES</text>
+  <rect x="40" y="104" width="150" height="118" rx="8" fill="#ffffff" stroke="#9fb0a6"/>
+  <text x="115" y="150" font-size="13" font-weight="700" fill="#1f2a24" text-anchor="middle">World Bank</text>
+  <text x="115" y="170" font-size="13" font-weight="700" fill="#1f2a24" text-anchor="middle">API v2</text>
+  <text x="115" y="192" font-size="12" fill="#46564d" text-anchor="middle">JSON em páginas</text>
+  <rect x="40" y="242" width="150" height="118" rx="8" fill="#ffffff" stroke="#9fb0a6"/>
+  <text x="115" y="288" font-size="13" font-weight="700" fill="#1f2a24" text-anchor="middle">OGHIST</text>
+  <text x="115" y="308" font-size="12" fill="#46564d" text-anchor="middle">histórico de</text>
+  <text x="115" y="326" font-size="12" fill="#46564d" text-anchor="middle">renda (xlsx)</text>
+
+  <!-- Bronze -->
+  <text x="314" y="88" font-size="12.5" font-weight="700" fill="#8a5a2b" text-anchor="middle">BRONZE</text>
+  <rect x="234" y="104" width="160" height="256" rx="8" fill="#f8eee2" stroke="#b98a5a"/>
+  <text x="314" y="138" font-size="14" font-weight="700" fill="#1f2a24" text-anchor="middle">guarda</text>
+  <text x="314" y="166" font-size="12" fill="#46564d" text-anchor="middle">o dado como veio</text>
+  <text x="314" y="208" font-size="12" fill="#46564d" text-anchor="middle">api_response</text>
+  <text x="314" y="228" font-size="12" fill="#46564d" text-anchor="middle">source_file</text>
+  <text x="314" y="270" font-size="12" fill="#46564d" text-anchor="middle">só aceita novas</text>
+  <text x="314" y="290" font-size="12" fill="#46564d" text-anchor="middle">linhas</text>
+
+  <!-- Silver -->
+  <text x="518" y="88" font-size="12.5" font-weight="700" fill="#5d6b73" text-anchor="middle">SILVER</text>
+  <rect x="438" y="104" width="160" height="256" rx="8" fill="#eef1f3" stroke="#8e9ca5"/>
+  <text x="518" y="138" font-size="14" font-weight="700" fill="#1f2a24" text-anchor="middle">trata</text>
+  <text x="518" y="166" font-size="12" fill="#46564d" text-anchor="middle">tipos e chaves</text>
+  <text x="518" y="186" font-size="12" fill="#46564d" text-anchor="middle">textos limpos</text>
+  <text x="518" y="206" font-size="12" fill="#46564d" text-anchor="middle">sem duplicatas</text>
+  <text x="518" y="248" font-size="12" fill="#46564d" text-anchor="middle">rodar de novo</text>
+  <text x="518" y="268" font-size="12" fill="#46564d" text-anchor="middle">não duplica</text>
+
+  <!-- Validate -->
+  <text x="687" y="88" font-size="12.5" font-weight="700" fill="#a33b2e" text-anchor="middle">CONFERE</text>
+  <path d="M687 172 L732 232 L687 292 L642 232 z" fill="#fbecea" stroke="#a33b2e"/>
+  <text x="687" y="229" font-size="10.5" font-weight="700" fill="#1f2a24" text-anchor="middle">16</text>
+  <text x="687" y="243" font-size="10.5" font-weight="700" fill="#1f2a24" text-anchor="middle">regras</text>
+  <text x="687" y="316" font-size="11" fill="#a33b2e" text-anchor="middle">erro: para</text>
+  <text x="687" y="334" font-size="11" fill="#46564d" text-anchor="middle">aviso: anota</text>
+
+  <!-- Gold -->
+  <text x="861" y="88" font-size="12.5" font-weight="700" fill="#9a7a10" text-anchor="middle">GOLD</text>
+  <rect x="776" y="104" width="170" height="256" rx="8" fill="#fbf4d9" stroke="#c9a92f"/>
+  <text x="861" y="138" font-size="14" font-weight="700" fill="#1f2a24" text-anchor="middle">publica</text>
+  <text x="861" y="172" font-size="12" font-weight="700" fill="#46564d" text-anchor="middle">modelo estrela</text>
+  <text x="861" y="192" font-size="12" fill="#46564d" text-anchor="middle">dim_* e fato_*</text>
+  <text x="861" y="234" font-size="12" font-weight="700" fill="#46564d" text-anchor="middle">consumo</text>
+  <text x="861" y="254" font-size="12" fill="#46564d" text-anchor="middle">pais_ano</text>
+  <text x="861" y="274" font-size="12" fill="#46564d" text-anchor="middle">resumo_*</text>
+  <text x="861" y="294" font-size="12" fill="#46564d" text-anchor="middle">ranking_crescimento</text>
+
+  <!-- Dashboards -->
+  <text x="1055" y="88" font-size="12.5" font-weight="700" fill="#2f6f55" text-anchor="middle">DASHBOARDS</text>
+  <rect x="990" y="104" width="130" height="118" rx="8" fill="#ffffff" stroke="#9fb0a6"/>
+  <text x="1055" y="170" font-size="13" font-weight="700" fill="#1f2a24" text-anchor="middle">Streamlit</text>
+  <rect x="990" y="242" width="130" height="118" rx="8" fill="#ffffff" stroke="#9fb0a6"/>
+  <text x="1055" y="308" font-size="13" font-weight="700" fill="#1f2a24" text-anchor="middle">Power BI</text>
+
+  <!-- Setas -->
+  <g stroke="#46564d" stroke-width="1.6" fill="none" marker-end="url(#seta)">
+    <path d="M190 163 L232 200"/>
+    <path d="M190 301 L232 264"/>
+    <path d="M394 232 L436 232"/>
+    <path d="M598 232 L640 232"/>
+    <path d="M732 232 L774 232"/>
+    <path d="M946 200 L988 163"/>
+    <path d="M946 264 L988 301"/>
+  </g>
+
+  <!-- Comandos -->
+  <text x="40" y="392" font-size="12" font-weight="700" fill="#2f6f55">COMANDOS</text>
+  <text x="314" y="392" font-size="12" fill="#46564d" text-anchor="middle">load-bronze</text>
+  <text x="518" y="392" font-size="12" fill="#46564d" text-anchor="middle">load-dimensions</text>
+  <text x="518" y="410" font-size="12" fill="#46564d" text-anchor="middle">load-observations</text>
+  <text x="687" y="392" font-size="12" fill="#46564d" text-anchor="middle">validate</text>
+  <text x="861" y="392" font-size="12" fill="#46564d" text-anchor="middle">build-gold</text>
+  <text x="1055" y="392" font-size="12" fill="#46564d" text-anchor="middle">dashboard_leitor</text>
+  <text x="1055" y="410" font-size="12" fill="#46564d" text-anchor="middle">só lê a gold</text>
+
+  <!-- ETL -->
+  <rect x="40" y="432" width="1080" height="44" rx="8" fill="#ffffff" stroke="#d5dcd6"/>
+  <text x="60" y="459" font-size="12" font-weight="700" fill="#1f2a24">etl</text>
+  <text x="96" y="459" font-size="12" fill="#46564d">registra cada execução, cada resultado de qualidade e cada migração aplicada</text>
+</svg>
