@@ -1,0 +1,46 @@
+site_name: World Bank Data Pipeline
+site_description: Pipeline de dados da World Bank Indicators API v2 para PostgreSQL, em arquitetura medalhão
+site_url: https://franciscoassislsj.github.io/World-Bank/
+repo_url: https://github.com/FranciscoAssislsj/World-Bank
+repo_name: FranciscoAssislsj/World-Bank
+edit_uri: ""
+
+theme:
+  name: material
+  language: pt-BR
+  features:
+    - navigation.sections
+    - content.code.copy
+    - search.highlight
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+# Com --strict, qualquer aviso abaixo faz o build falhar (D-091).
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+nav:
+  - Início: index.md
+  - Primeiros passos:
+      - Instalação: installation.md
+      - Configuração: configuration.md
+  - O projeto:
+      - Arquitetura: architecture.md
+      - Pipelines: pipelines.md
+      - Fontes de dados: data-sources.md
+      - Qualidade dos dados: quality.md
+      - Dashboards: dashboards.md
+  - Referência:
+      - Dicionário de dados: dicionario-dados.md
+      - Decisões sobre o dado: data-decisions.md
+      - Desenvolvimento: development.md
+      - Erros e suposições da IA: ai-log.md
