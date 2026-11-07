@@ -2,6 +2,8 @@
 
 Aqui só se desenha: todo número vem pronto de ``world_bank.dashboard.consultas``, que lê
 a gold. O que muda neste arquivo é a escrita de um número, nunca o valor (D-078).
+As poucas contas daqui são só de desenho, como a altura de um rótulo ou o tamanho
+máximo da bolha, e nenhuma vira número na tela (D-097).
 """
 
 from typing import Any
@@ -111,8 +113,12 @@ def _cartao(
 
 
 def _painel(nome: str, icone: str, titulo: str, subtitulo: str) -> Any:
-    """Abre um painel branco com título que diz a conclusão, e não só o assunto."""
-    painel = st.container(border=True, key=f"painel_{nome}")
+    """Abre um painel branco com título que diz a conclusão, e não só o assunto.
+
+    ``height="stretch"`` deixa os painéis lado a lado com a mesma altura, como os
+    cartões, qualquer que seja a largura da janela.
+    """
+    painel = st.container(border=True, key=f"painel_{nome}", height="stretch")
     with painel:
         st.subheader(f":material/{icone}: {titulo}", anchor=False)
         st.caption(subtitulo)

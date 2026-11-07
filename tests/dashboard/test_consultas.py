@@ -37,6 +37,18 @@ def test_consulta_nao_escreve(nome: str) -> None:
     assert not re.search(proibido, CONSULTAS[nome], re.IGNORECASE)
 
 
+@pytest.mark.parametrize("nome", sorted(CONSULTAS))
+def test_consulta_nao_calcula(nome: str) -> None:
+    """A consulta só escolhe colunas e linhas; toda conta fica na gold (D-097)."""
+    sql = re.sub(r"'[^']*'", "''", CONSULTAS[nome])  # sem os textos entre aspas
+    sql = re.sub(r"%\(\w+\)s(::\w+)?", "?", sql)  # sem os parâmetros
+
+    assert not re.search(r"[-+*/]", sql), "operação aritmética"
+    funcoes = r"\b(sum|avg|count|min|max|rank|row_number|coalesce|round|case|limit)\b"
+    assert not re.search(funcoes, sql, re.IGNORECASE)
+    assert not re.search(r"=\s*''\s+as\b", sql), "comparação virando coluna"
+
+
 def test_ler_troca_decimal_por_float(mocker: MockerFixture) -> None:
     connect = mocker.patch("world_bank.dashboard.consultas.psycopg.connect")
     conn = connect.return_value.__enter__.return_value

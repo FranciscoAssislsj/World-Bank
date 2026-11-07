@@ -1,6 +1,6 @@
 # Dashboards
 
-São dois dashboards com as mesmas 2 telas ([D-083](data-decisions.md)). Eles leem só a gold e não calculam regra de negócio, então o mesmo número aparece nos dois ([D-078](data-decisions.md)). O usuário `dashboard_leitor` não consegue ler mais nada no banco ([D-079](data-decisions.md)).
+São dois dashboards com as mesmas 2 telas ([D-083](data-decisions.md)). Eles leem só a gold e não fazem nenhuma conta: até o PIB em bilhões, o top 10 e o destaque do Brasil vêm prontos da gold, então o mesmo número aparece nos dois ([D-078 e D-097](data-decisions.md)). O usuário `dashboard_leitor` não consegue ler mais nada no banco ([D-079](data-decisions.md)).
 
 As telas são contadas a partir do Brasil: laranja é o Brasil, cinza é contexto, e vermelho é queda ou valor atípico ([D-084](data-decisions.md)).
 

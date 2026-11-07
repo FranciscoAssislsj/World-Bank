@@ -42,11 +42,11 @@
                       "Entity": "Medidas"
                     }
                   },
-                  "Property": "PIB, em US$ bilhões"
+                  "Property": "PIB dos 10 maiores, em US$ bilhões"
                 }
               },
-              "queryRef": "Medidas.PIB, em US$ bilhões",
-              "nativeQueryRef": "PIB, em US$ bilhões"
+              "queryRef": "Medidas.PIB dos 10 maiores, em US$ bilhões",
+              "nativeQueryRef": "PIB dos 10 maiores, em US$ bilhões"
             }
           ]
         }
@@ -61,7 +61,7 @@
                     "Entity": "Medidas"
                   }
                 },
-                "Property": "PIB, em US$ bilhões"
+                "Property": "PIB dos 10 maiores, em US$ bilhões"
               }
             },
             "direction": "Descending"
@@ -422,111 +422,5 @@
         }
       ]
     }
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "top_10_paises",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "pais_ano"
-              }
-            },
-            "Property": "pais"
-          }
-        },
-        "type": "TopN",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "subconsulta",
-              "Expression": {
-                "Subquery": {
-                  "Query": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "p",
-                        "Entity": "pais_ano",
-                        "Type": 0
-                      },
-                      {
-                        "Name": "m",
-                        "Entity": "Medidas",
-                        "Type": 0
-                      }
-                    ],
-                    "Select": [
-                      {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Source": "p"
-                            }
-                          },
-                          "Property": "pais"
-                        },
-                        "Name": "campo"
-                      }
-                    ],
-                    "OrderBy": [
-                      {
-                        "Direction": 2,
-                        "Expression": {
-                          "Measure": {
-                            "Expression": {
-                              "SourceRef": {
-                                "Source": "m"
-                              }
-                            },
-                            "Property": "PIB, em US$ bilhões"
-                          }
-                        }
-                      }
-                    ],
-                    "Top": 10
-                  }
-                }
-              },
-              "Type": 2
-            },
-            {
-              "Name": "p",
-              "Entity": "pais_ano",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "p"
-                          }
-                        },
-                        "Property": "pais"
-                      }
-                    }
-                  ],
-                  "Table": {
-                    "SourceRef": {
-                      "Source": "subconsulta"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        "howCreated": "User"
-      }
-    ]
   }
 }

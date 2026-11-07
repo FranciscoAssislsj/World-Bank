@@ -3,6 +3,8 @@
 Os filtros entram sempre como parâmetros, nunca colados no texto do SQL. O teste
 ``tests/dashboard/test_consultas.py`` recusa qualquer ``FROM`` ou ``JOIN`` fora de
 ``gold.``, e o usuário ``dashboard_leitor`` nem conseguiria ler outra camada (D-079).
+As consultas só escolhem colunas e linhas: nenhuma conta, posição ou rótulo é
+calculado aqui, e o teste recusa operação aritmética e função de agregação (D-097).
 """
 
 from decimal import Decimal
@@ -35,11 +37,9 @@ where recorte = 'renda' and indicador_id = 'SP.DYN.LE00.IN'
 order by nivel_renda_ordem, ano
 """
 DISPERSAO = """
-select pais, pais_iso3 = 'BRA' as destaque,
-       coalesce(nivel_renda, 'Não classificado') as nivel_renda,
+select pais, e_brasil as destaque, nivel_renda_rotulo as nivel_renda,
        pib_per_capita_usd, expectativa_vida, populacao,
-       tem_valor_atipico, motivo_atipico,
-       row_number() over (order by populacao desc nulls last) <= 6 as com_rotulo
+       tem_valor_atipico, motivo_atipico, rotulo_dispersao as com_rotulo
 from gold.pais_ano
 where ano = %(ano)s
   and pib_per_capita_usd is not null and expectativa_vida is not null
@@ -63,20 +63,21 @@ where ano = %(ano)s
 REGIOES = "select distinct regiao from gold.ranking_crescimento order by regiao"
 PAISES = "select distinct pais from gold.pais_ano order by pais"
 PIB_POR_PAIS = """
-select ano, pais, pib_usd / 1e9 as pib_bilhoes
+select ano, pais, pib_bilhoes_usd as pib_bilhoes
 from gold.pais_ano
 where pais = any(%(paises)s) and pib_usd is not null
 order by pais, ano
 """
-TOP_10_PIB = f"""
-select pais, pais_iso3 = 'BRA' as destaque, pib_usd / 1e9 as pib_bilhoes
+TOP_10_PIB = """
+select pais, e_brasil as destaque, pib_bilhoes_usd as pib_bilhoes
 from gold.pais_ano
-where ano = %(ano)s and pib_usd is not null and {_FILTRO_REGIAO}
-order by pib_usd desc
-limit 10
+where ano = %(ano)s
+  and ((%(regiao)s::text is null and posicao_pib_mundo <= 10)
+       or (regiao = %(regiao)s and posicao_pib_regiao <= 10))
+order by posicao_pib_mundo
 """
 RANKING_CRESCIMENTO = f"""
-select pais, pais_iso3 = 'BRA' as destaque, regiao, nivel_renda_atual,
+select pais, e_brasil as destaque, regiao, nivel_renda_atual,
        ano_inicial, ano_final,
        crescimento_pib_real_pct as crescimento,
        posicao_pib_mundo as posicao_mundo, posicao_pib_regiao as posicao_regiao
