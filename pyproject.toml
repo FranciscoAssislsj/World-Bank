@@ -1,13 +1,12 @@
 [project]
 name = "world-bank"
 version = "0.1.0"
-description = "Pipeline de dados da World Bank Indicators API v2 para PostgreSQL em arquitetura medalhão (bronze, silver, gold)"
+description = "Pipeline de dados da World Bank Indicators API v2 para PostgreSQL em arquitetura medalhão (bronze, silver, gold), com dashboards em Streamlit e Power BI"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "httpx>=0.28.1",
     "openpyxl>=3.1.5",
-    "pandas>=3.1.0",
     "psycopg[binary]>=3.3.6",
     "pydantic>=2.14.2",
     "pydantic-settings>=2.16.2",

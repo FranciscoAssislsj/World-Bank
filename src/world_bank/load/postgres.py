@@ -98,6 +98,10 @@ class SourceFile:
     content_hash: str
 
 
+# Sem este limite, o psycopg espera 130 segundos em silêncio com o banco desligado.
+CONNECT_TIMEOUT_SECONDS = 10
+
+
 def connect(settings: Settings) -> psycopg.Connection:
     """Abre uma conexão com o banco em modo autocommit.
 
@@ -115,7 +119,9 @@ def connect(settings: Settings) -> psycopg.Connection:
     """
     try:
         return psycopg.connect(
-            settings.database_url.get_secret_value(), autocommit=True
+            settings.database_url.get_secret_value(),
+            autocommit=True,
+            connect_timeout=CONNECT_TIMEOUT_SECONDS,
         )
     except psycopg.OperationalError as exc:
         raise LoadError(f"não foi possível conectar ao banco: {exc}") from exc

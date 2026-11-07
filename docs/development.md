@@ -5,20 +5,22 @@
 ```bash
 uv run ruff format --check .
 uv run ruff check .
-uv run pytest                # testes unitários: sem rede e sem banco, cobertura >= 70%
-uv run --group dashboard pytest -m integration --no-cov   # testes contra o PostgreSQL local
-uv run mkdocs build --strict # monta o site e falha em qualquer aviso
+uv run pytest
+uv run --group dashboard pytest -m integration --no-cov
+uv run mkdocs build --strict
 ```
+
+O `pytest` roda os testes unitários, sem rede e sem banco, com cobertura mínima de 70%. O segundo comando roda os testes contra o banco local. O `mkdocs build --strict` monta o site e falha em qualquer aviso.
 
 Os testes de integração precisam da silver carregada. Sem ela, parte deles se pula sozinha. O `--no-cov` existe porque a cobertura mínima vale para os testes unitários: sem ele, o comando termina com erro mesmo com todos os testes passando.
 
 ## O site de documentação
 
 ```bash
-uv run mkdocs serve -a 127.0.0.1:8001   # abre em http://127.0.0.1:8001
+uv run mkdocs serve -a 127.0.0.1:8001
 ```
 
-A porta 8001 evita conflito com a ponte MCP, que usa a 8000.
+O `-a` escolhe outra porta, porque a padrão do MkDocs é a mesma da ponte MCP.
 
 O site é publicado no [GitHub Pages](https://franciscoassislsj.github.io/World-Bank/) a cada envio para a `main`, pelo [workflow de documentação](https://github.com/FranciscoAssislsj/World-Bank/blob/main/.github/workflows/docs.yml) ([D-090](data-decisions.md)).
 
@@ -28,8 +30,9 @@ Ative uma vez, depois do `uv sync`:
 
 ```bash
 uv run pre-commit install
-uv run pre-commit run --all-files   # opcional: confere o projeto inteiro agora
 ```
+
+Para conferir o projeto inteiro de uma vez: `uv run pre-commit run --all-files`.
 
 A cada `git commit`, ele roda o Ruff, confere o `uv.lock` e barra arquivo `.env`, chave privada e arquivo grande ([D-075](data-decisions.md)). Se ele corrigir um arquivo, o commit para: rode `git add` nesse arquivo e faça o commit de novo.
 

@@ -4,11 +4,11 @@
 
 Pipeline de dados que consome a [World Bank Indicators API v2](https://datahelpdesk.worldbank.org/knowledgebase/articles/889392) e organiza os dados em **arquitetura medalhão** (`bronze` → `silver` → `gold`) no **PostgreSQL**, com dashboards em Streamlit e Power BI.
 
-> Em validação final. O código e a documentação estão prontos, e falta a conferência final do projeto.
-
 **Documentação completa:** [franciscoassislsj.github.io/World-Bank](https://franciscoassislsj.github.io/World-Bank/).
 
 **Rastreabilidade:** cada indicador da camada gold sai de um arquivo em `sql/gold/`, cada decisão sobre o dado tem motivo em [docs/data-decisions.md](docs/data-decisions.md), os erros da IA ficam em [docs/ai-log.md](docs/ai-log.md), e o histórico do git tem um commit por etapa.
+
+**Validação final:** as provas de que o banco é igual à fonte e de que o projeto roda do zero estão em [docs/validacao-final.md](docs/validacao-final.md).
 
 **Fonte dos dados:** World Bank, World Development Indicators e histórico de classificação de renda (`OGHIST`), sob licença [CC BY 4.0](https://datacatalog.worldbank.org/public-licenses#cc-by).
 
@@ -63,7 +63,7 @@ Pré-requisitos: [pyenv](https://github.com/pyenv-win/pyenv-win) com Python 3.14
 ```bash
 uv sync                      # cria a .venv e instala as dependências do uv.lock
 cp .env.example .env         # depois, ajuste os valores locais
-docker compose up -d --wait  # sobe o PostgreSQL 17 em 127.0.0.1:5433
+docker compose up -d --wait  # sobe o PostgreSQL 17
 uv run python -m world_bank migrate      # cria os schemas e as tabelas
 uv run python -m world_bank load-bronze  # grava na bronze as respostas da API e o histórico de renda
 uv run python -m world_bank load-dimensions  # grava os cadastros da silver a partir da bronze
@@ -77,8 +77,6 @@ Ou tudo de uma vez, parando na primeira falha. Uma regra de erro impede a gold d
 ```bash
 uv run python -m world_bank run-all  # aceita --start, --end e --full-refresh
 ```
-
-O banco fica na porta **5433** do computador, e não na 5432, para não conflitar com um PostgreSQL já instalado.
 
 `load-bronze` e `load-observations` aceitam `--start` e `--end` para mudar o período das observações (padrão: 2000–2024). Rodar de novo o `load-bronze` só grava as requisições cujo conteúdo mudou na API ([D-010](docs/data-decisions.md)). O `load-observations` é pulado se a bronze não mudou, e `--full-refresh` força o reprocessamento ([D-045](docs/data-decisions.md)).
 
@@ -154,7 +152,7 @@ O layout foi desenhado antes, no Figma ([imagens](docs/dashboard/layout/)), e as
 
 ```bash
 uv run python -m world_bank migrate   # define a senha do usuário dos dashboards, vinda do .env
-uv run --group dashboard streamlit run dashboard/app.py   # abre em http://localhost:8501
+uv run --group dashboard streamlit run dashboard/app.py   # abre no navegador
 ```
 
 | Tela | O que mostra |
@@ -162,7 +160,7 @@ uv run --group dashboard streamlit run dashboard/app.py   # abre em http://local
 | Renda e qualidade de vida | Países analisados, expectativa de vida por faixa de renda e PIB per capita × expectativa de vida |
 | PIB e crescimento | PIB por país ao longo do tempo, os 10 maiores PIBs e o ranking de crescimento dos últimos 10 anos |
 
-O relatório do Power BI está em [`dashboard/powerbi/`](dashboard/powerbi/), como projeto `.pbip` ([D-086](docs/data-decisions.md)), e exportado em [PDF](docs/dashboard/world_bank_powerbi.pdf). Com o banco ligado, abra `dashboard/powerbi/world_bank.pbip` no Power BI Desktop e clique em **Atualizar**. A credencial e os demais passos estão em [Dashboards](docs/dashboards.md).
+O relatório do Power BI está em [`dashboard/powerbi/`](dashboard/powerbi/), como projeto `.pbip` ([D-086](docs/data-decisions.md)), exportado em [PDF](docs/dashboard/world_bank_powerbi.pdf) e com [imagens das telas](docs/dashboard/powerbi/). Não há link online, porque publicar exige licença ([D-094](docs/data-decisions.md)). Com o banco ligado, abra `dashboard/powerbi/world_bank.pbip` no Power BI Desktop e clique em **Atualizar**. A credencial e os demais passos estão em [Dashboards](docs/dashboards.md).
 
 ## Onde a IA errou
 
@@ -173,4 +171,4 @@ O projeto foi feito com ajuda de uma IA (Claude), e cada erro ficou registrado e
 - **Confiou em teste que não testava tudo:** considerou o Streamlit pronto porque os testes passavam, mas o ranking quebrava no navegador. Agora as telas também são conferidas em um navegador.
 - **Leu só a contagem de testes:** registrou "42 passed" sem ver que o comando terminava com erro e que 26 testes se pulavam com o banco vazio. Agora o CI não aceita teste pulado ([D-072](docs/data-decisions.md)).
 - **Passou um comando sem testar:** o pacote indicado para o MCP do Postgres não funcionava em nenhuma versão disponível. O projeto passou a usar a imagem Docker.
-- **Não conferiu o ambiente:** usou a porta 5432, já ocupada por outro PostgreSQL, e o erro de senha parecia ser outro problema. O banco foi para a 5433.
+- **Não conferiu o ambiente:** usou uma porta já ocupada por outro PostgreSQL, e o erro de senha parecia ser outro problema. O banco foi para outra porta.
