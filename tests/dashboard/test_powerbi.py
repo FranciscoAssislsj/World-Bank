@@ -15,7 +15,9 @@ TABELAS = RAIZ / "world_bank.SemanticModel" / "definition" / "tables"
 RELATORIO = RAIZ / "world_bank.Report" / "definition"
 CONSULTA = re.compile(r'Value\.NativeQuery\(Fonte, "(?P<sql>[^"]+)"\)')
 COLUNA = re.compile(r"^\tcolumn (\S+)$", re.MULTILINE)
-MEDIDA = re.compile(r"^\tmeasure '([^']+)'", re.MULTILINE)
+# O Power BI Desktop grava o nome entre aspas só quando ele tem espaço ou acento
+# composto; um nome de uma palavra, como População, fica sem aspas.
+MEDIDA = re.compile(r"^\tmeasure (?:'([^']+)'|([^\s=']+))", re.MULTILINE)
 
 
 def _modelo() -> dict[str, set[str]]:
@@ -23,7 +25,9 @@ def _modelo() -> dict[str, set[str]]:
     campos = {}
     for arquivo in TABELAS.glob("*.tmdl"):
         texto = arquivo.read_text(encoding="utf-8")
-        campos[arquivo.stem] = set(COLUNA.findall(texto)) | set(MEDIDA.findall(texto))
+        campos[arquivo.stem] = set(COLUNA.findall(texto)) | {
+            a or b for a, b in MEDIDA.findall(texto)
+        }
     return campos
 
 
