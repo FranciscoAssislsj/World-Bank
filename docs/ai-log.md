@@ -135,6 +135,7 @@ Validação executada pela IA: dois clientes ao mesmo tempo na ponte leram `gold
 | A IA usou `axisScale` para a escala logarítmica. O nome estava errado, e nem o esquema oficial nem o Desktop avisaram: ele só descartou a propriedade ao salvar. | Olhando a tela com dados, e comparando o que foi gerado com o que o Desktop salvou. | O nome certo é `logAxisScale`. A comparação achou só essa propriedade descartada. |
 | A IA supôs que a coluna de ordem poria o Brasil à frente das bolhas. Ela só ordena a legenda. | Na conferência visual. | As bolhas ficaram menores, e o limite foi registrado na D-086. |
 | A IA demorou a suspeitar que a senha estava sendo copiada da linha do outro usuário (`wb`). | O responsável disse que a senha continuava com 32 caracteres, o tamanho da senha do `wb`. | Depois de trocar a senha do `dashboard_leitor`, o login funcionou copiando da linha certa. |
+| A IA disse que o Figma estava bloqueado e propôs importar à mão ou pagar um plano, sem antes ler a regra de limites. | O responsável desconfiou da ferramenta usada. A regra mostrou 20 chamadas por mês e uma ferramenta de escrita isenta. | O fundo foi enviado pela ferramenta isenta, sem custo. |
 
 Validação executada pela IA no Power BI: cartões, títulos, Top 10 e ranking comparados com o banco e com o Streamlit, em 2023/2024 e com 2010 e Sul da Ásia pré-selecionados.
 

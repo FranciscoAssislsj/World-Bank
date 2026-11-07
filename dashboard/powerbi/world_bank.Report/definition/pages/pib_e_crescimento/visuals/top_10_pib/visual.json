@@ -4,10 +4,10 @@
   "position": {
     "x": 976,
     "y": 230,
-    "z": 26000,
+    "z": 22000,
     "height": 440,
     "width": 424,
-    "tabOrder": 26000
+    "tabOrder": 22000
   },
   "visual": {
     "visualType": "clusteredBarChart",
@@ -220,25 +220,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#ffffff'"
-                    }
-                  }
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0D"
+                  "Value": "false"
                 }
               }
             }
@@ -251,25 +233,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#e1e0d9'"
-                    }
-                  }
-                }
-              }
-            },
-            "radius": {
-              "expr": {
-                "Literal": {
-                  "Value": "10D"
+                  "Value": "false"
                 }
               }
             }

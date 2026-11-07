@@ -2,12 +2,12 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
   "name": "cartao_diferenca_detalhe",
   "position": {
-    "x": 704.6666666666667,
+    "x": 704.66666666666674,
     "y": 174,
-    "z": 14000,
+    "z": 12000,
     "height": 34,
-    "width": 330.6666666666667,
-    "tabOrder": 14000
+    "width": 330.66666666666669,
+    "tabOrder": 12000
   },
   "visual": {
     "visualType": "card",
@@ -90,24 +90,6 @@
                   "Value": "false"
                 }
               }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#ffffff'"
-                    }
-                  }
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0D"
-                }
-              }
             }
           }
         }
@@ -119,24 +101,6 @@
               "expr": {
                 "Literal": {
                   "Value": "false"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#e1e0d9'"
-                    }
-                  }
-                }
-              }
-            },
-            "radius": {
-              "expr": {
-                "Literal": {
-                  "Value": "10D"
                 }
               }
             }

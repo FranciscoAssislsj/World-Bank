@@ -9,12 +9,28 @@
     "background": [
       {
         "properties": {
-          "color": {
-            "solid": {
-              "color": {
+          "image": {
+            "image": {
+              "name": {
                 "expr": {
                   "Literal": {
-                    "Value": "'#f2f3f5'"
+                    "Value": "'fundo_pib_e_crescimento.png'"
+                  }
+                }
+              },
+              "url": {
+                "expr": {
+                  "ResourcePackageItem": {
+                    "PackageName": "RegisteredResources",
+                    "PackageType": 1,
+                    "ItemName": "fundo_pib_e_crescimento.png"
+                  }
+                }
+              },
+              "scaling": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'Fit'"
                   }
                 }
               }

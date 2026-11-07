@@ -136,7 +136,7 @@ O relatório está em [`dashboard/powerbi/`](dashboard/powerbi/), como projeto `
 2. Clique em **Atualizar** e aprove as consultas ao banco.
 3. Na credencial do banco, escolha **Banco de dados**, com o usuário `dashboard_leitor` e a senha de `DASHBOARD_DATABASE_URL`. Se o programa avisar sobre conexão sem criptografia, aceite: o banco só existe na sua máquina.
 
-Para mudar o endereço do banco, altere os parâmetros `ServidorBanco` e `NomeBanco`, em **Transformar dados**. As imagens das telas estão em [docs/dashboard/powerbi/](docs/dashboard/powerbi/).
+Para mudar o endereço do banco, altere os parâmetros `ServidorBanco` e `NomeBanco`, em **Transformar dados**. As imagens das telas estão em [docs/dashboard/powerbi/](docs/dashboard/powerbi/), e o relatório exportado em [PDF](docs/dashboard/world_bank_powerbi.pdf). O PDF mostra as primeiras linhas do ranking; a lista completa está no relatório.
 
 ## Consultar o banco pelo Claude Code (opcional)
 

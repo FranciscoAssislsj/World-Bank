@@ -39,6 +39,8 @@ repos:
     hooks:
       - id: detect-private-key
       - id: check-added-large-files
+        # O curso exige o PDF do Power BI no repositório; o limite vale para o resto (D-089).
+        exclude: ^docs/dashboard/world_bank_powerbi\.pdf$
       - id: check-merge-conflict
       - id: check-yaml
       - id: check-toml

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.0.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.3.0/schema.json",
   "themeCollection": {
     "customTheme": {
       "name": "world_bank_tema.json",
@@ -31,6 +31,16 @@
       "name": "RegisteredResources",
       "type": "RegisteredResources",
       "items": [
+        {
+          "name": "fundo_pib_e_crescimento.png",
+          "path": "fundo_pib_e_crescimento.png",
+          "type": "Image"
+        },
+        {
+          "name": "fundo_renda_e_vida.png",
+          "path": "fundo_renda_e_vida.png",
+          "type": "Image"
+        },
         {
           "name": "world_bank_tema.json",
           "path": "world_bank_tema.json",

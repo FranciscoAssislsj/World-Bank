@@ -9,12 +9,28 @@
     "background": [
       {
         "properties": {
-          "color": {
-            "solid": {
-              "color": {
+          "image": {
+            "image": {
+              "name": {
                 "expr": {
                   "Literal": {
-                    "Value": "'#f2f3f5'"
+                    "Value": "'fundo_renda_e_vida.png'"
+                  }
+                }
+              },
+              "url": {
+                "expr": {
+                  "ResourcePackageItem": {
+                    "PackageName": "RegisteredResources",
+                    "PackageType": 1,
+                    "ItemName": "fundo_renda_e_vida.png"
+                  }
+                }
+              },
+              "scaling": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'Fit'"
                   }
                 }
               }

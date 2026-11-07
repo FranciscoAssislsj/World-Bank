@@ -117,9 +117,29 @@ def test_interactions_point_to_visuals_of_the_same_page() -> None:
             assert {regra["source"], regra["target"]} <= existentes
 
 
+def test_each_page_has_its_background_image_in_the_project() -> None:
+    """O fundo vem do Figma, e a imagem precisa ter o tamanho da página (D-089)."""
+    recursos = RAIZ / "world_bank.Report" / "StaticResources" / "RegisteredResources"
+    for nome in ("renda_e_vida", "pib_e_crescimento"):
+        pagina = json.loads(
+            (RELATORIO / "pages" / nome / "page.json").read_text(encoding="utf-8")
+        )
+        imagem = recursos / f"fundo_{nome}.png"
+        assert f"fundo_{nome}.png" in json.dumps(pagina["objects"]["background"])
+        # Num PNG, a largura e a altura ficam nos bytes 16 a 24 do arquivo.
+        cabecalho = imagem.read_bytes()[16:24]
+        largura = int.from_bytes(cabecalho[:4], "big")
+        altura = int.from_bytes(cabecalho[4:], "big")
+        assert (largura, altura) == (pagina["width"], pagina["height"])
+
+
 @pytest.mark.parametrize("segredo", ["password", "senha", "pwd=", "dashboard_leitor"])
 def test_project_has_no_credentials(segredo: str) -> None:
-    arquivos = [p for p in RAIZ.rglob("*") if p.is_file() and ".pbi" not in p.parts]
+    arquivos = [
+        p
+        for p in RAIZ.rglob("*")
+        if p.is_file() and ".pbi" not in p.parts and p.suffix != ".png"
+    ]
     assert arquivos
 
     com_segredo = [
