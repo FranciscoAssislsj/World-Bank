@@ -1,8 +1,8 @@
 -- gold.pais_ano
 -- Pergunta de negócio: Como PIB per capita, expectativa de vida, eletricidade e internet se relacionam em cada país e ano?
 -- Grão (o que é uma linha): um país em um ano, com um indicador por coluna.
--- Origem: silver.nome_portugues, silver.fato_observacao, silver.dim_pais, silver.dim_regiao, silver.dim_nivel_renda, silver.classificacao_renda_anual, silver.valor_atipico
--- Regras: Nomes em português, com o original guardado na silver (D-082). só países, sem agregados (D-023). A renda é a daquele ano (D-038, D-059). Valor ausente fica NULL, sem preencher (D-042, D-063). Todo valor é o da fonte, e o atípico só ganha uma marca (D-062, D-070).
+-- Origem: gold.fato_observacao, gold.dim_pais, gold.valores_atipicos, gold.dim_regiao, gold.fato_renda_anual, gold.dim_nivel_renda
+-- Regras: Nomes em português, vindos das dimensões (D-082). só países, sem agregados (D-023). A renda é a daquele ano (D-038, D-059). Valor ausente fica NULL, sem preencher (D-042, D-063). Todo valor é o da fonte, e o atípico só ganha uma marca (D-062, D-070).
 -- Chave: pais_iso3, ano
 -- Coluna pais_iso3: Código ISO3 do país.
 -- Coluna pais: Nome do país.
@@ -29,6 +29,8 @@
 -- Coluna co2_per_capita: CO2 por pessoa, em toneladas de CO2 equivalente (EN.GHG.CO2.PC.CE.AR5).
 -- Coluna tem_valor_atipico: true quando algum valor desta linha foi apontado como estranho; o motivo diz qual (D-062).
 -- Coluna motivo_atipico: Qual valor foi apontado e por quê; NULL se nenhum foi (D-062).
+-- Coluna grupo_grafico: Cor do país nos gráficos: Brasil, Valor atípico ou a faixa de renda do ano (D-084, D-085).
+-- Coluna grupo_grafico_ordem: Ordem do grupo na legenda: da menor renda à maior, com o Brasil por último (D-084, D-085).
 with base as (
     select
         f.pais_iso3,
@@ -36,21 +38,21 @@ with base as (
         f.indicador_id,
         f.valor,
         a.motivo
-    from silver.fato_observacao as f
-    join silver.dim_pais as p on p.pais_iso3 = f.pais_iso3 and not p.e_agregado
-    left join silver.valor_atipico as a
+    from gold.fato_observacao as f
+    join gold.dim_pais as p on p.pais_iso3 = f.pais_iso3 and not p.e_agregado
+    left join gold.valores_atipicos as a
         on a.pais_iso3 = f.pais_iso3
         and a.indicador_id = f.indicador_id
         and a.ano = f.ano
 )
 select
     p.pais_iso3,
-    silver.nome_pt('pais', p.pais_iso3, p.nome) as pais,
+    p.nome as pais,
     b.ano,
     p.regiao_id,
-    silver.nome_pt('regiao', p.regiao_id, r.nome) as regiao,
+    r.nome as regiao,
     c.nivel_renda_id,
-    silver.nome_pt('renda', c.nivel_renda_id, n.nome) as nivel_renda,
+    n.nome as nivel_renda,
     n.ordem as nivel_renda_ordem,
     max(b.valor) filter (where b.indicador_id = 'SP.POP.TOTL') as populacao,
     max(b.valor) filter (where b.indicador_id = 'SP.URB.TOTL.IN.ZS') as populacao_urbana_pct,
@@ -68,13 +70,23 @@ select
     max(b.valor) filter (where b.indicador_id = 'IT.NET.USER.ZS') as acesso_internet_pct,
     max(b.valor) filter (where b.indicador_id = 'EN.GHG.CO2.PC.CE.AR5') as co2_per_capita,
     count(b.motivo) > 0 as tem_valor_atipico,
-    string_agg(b.motivo, '; ' order by b.motivo) as motivo_atipico
+    string_agg(b.motivo, '; ' order by b.motivo) as motivo_atipico,
+    case
+        when p.pais_iso3 = 'BRA' then 'Brasil'
+        when count(b.motivo) > 0 then 'Valor atípico'
+        else coalesce(n.nome, 'Não classificado')
+    end as grupo_grafico,
+    case
+        when p.pais_iso3 = 'BRA' then 7
+        when count(b.motivo) > 0 then 6
+        else coalesce(n.ordem + 1, 1)
+    end as grupo_grafico_ordem
 from base as b
-join silver.dim_pais as p on p.pais_iso3 = b.pais_iso3
-join silver.dim_regiao as r on r.regiao_id = p.regiao_id
-left join silver.classificacao_renda_anual as c
+join gold.dim_pais as p on p.pais_iso3 = b.pais_iso3
+join gold.dim_regiao as r on r.regiao_id = p.regiao_id
+left join gold.fato_renda_anual as c
     on c.pais_iso3 = b.pais_iso3 and c.ano_referencia = b.ano
-left join silver.dim_nivel_renda as n on n.nivel_renda_id = c.nivel_renda_id
+left join gold.dim_nivel_renda as n on n.nivel_renda_id = c.nivel_renda_id
 group by
     p.pais_iso3, p.nome, b.ano, p.regiao_id, r.nome,
     c.nivel_renda_id, n.nome, n.ordem;

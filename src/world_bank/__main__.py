@@ -48,7 +48,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--end", type=int, help="último ano das observações (padrão: config)"
     )
     commands.add_parser(
-        "load-dimensions", help="grava as dimensões da silver a partir da bronze"
+        "load-dimensions", help="grava os cadastros da silver a partir da bronze"
     )
     load_observations = commands.add_parser(
         "load-observations", help="grava o fato da silver a partir da bronze"

@@ -471,7 +471,7 @@ def delete_missing_links(
     """
     cursor = conn.execute(
         """
-        delete from silver.ponte_indicador_topico as alvo
+        delete from silver.indicador_topico as alvo
         where alvo.indicador_id = any(%(indicators)s)
           and not exists (
               select 1
@@ -650,9 +650,9 @@ def country_codes(conn: psycopg.Connection) -> dict[str, str]:
         conn: Conexão com o banco.
 
     Returns:
-        O código ISO3 de cada código ISO2 em ``silver.dim_pais``.
+        O código ISO3 de cada código ISO2 em ``silver.pais``.
     """
-    rows = conn.execute("select pais_iso2, pais_iso3 from silver.dim_pais")
+    rows = conn.execute("select pais_iso2, pais_iso3 from silver.pais")
     return dict(rows.fetchall())
 
 

@@ -17,15 +17,15 @@ from world_bank.pipelines.dimensions import (
 )
 
 WRITE_ORDER = [
-    "dim_regiao",
-    "dim_nivel_renda",
-    "dim_tipo_emprestimo",
-    "dim_fonte",
-    "dim_topico",
-    "dim_pais",
+    "regiao",
+    "nivel_renda",
+    "tipo_emprestimo",
+    "fonte",
+    "topico",
+    "pais",
     "classificacao_renda_anual",
-    "dim_indicador",
-    "ponte_indicador_topico",
+    "indicador",
+    "indicador_topico",
 ]
 
 RECORDS: dict[str, list[dict[str, Any]]] = {
@@ -112,12 +112,12 @@ def test_each_row_gets_the_run_id_of_its_own_load(income_file: SourceFile) -> No
 
     tables = {t.table: t for t in build_tables(catalogs, [indicator], income_file)}
 
-    assert tables["dim_pais"].rows[0]["bronze_run_id"] == catalogs["country"].run_id
-    assert tables["dim_regiao"].rows[0]["bronze_run_id"] == catalogs["region"].run_id
-    assert tables["dim_indicador"].rows[0]["bronze_run_id"] == indicator.run_id
+    assert tables["pais"].rows[0]["bronze_run_id"] == catalogs["country"].run_id
+    assert tables["regiao"].rows[0]["bronze_run_id"] == catalogs["region"].run_id
+    assert tables["indicador"].rows[0]["bronze_run_id"] == indicator.run_id
     income = tables["classificacao_renda_anual"].rows[0]
     assert income["bronze_run_id"] == income_file.run_id
-    link = tables["ponte_indicador_topico"].rows[0]
+    link = tables["indicador_topico"].rows[0]
     assert link["bronze_run_id"] == indicator.run_id
 
 
@@ -138,21 +138,21 @@ def test_write_tables_uses_one_transaction_and_syncs_links(
     conn = MagicMock()
     links = [{"indicador_id": "AA", "topico_id": 1}]
     tables = [
-        _table("dim_regiao", [{"id": "REG"}]),
-        _table("ponte_indicador_topico", links),
+        _table("regiao", [{"id": "REG"}]),
+        _table("indicador_topico", links),
     ]
 
     results = write_tables(conn, tables, ["AA"])
 
     conn.transaction.assert_called_once_with()
     assert upsert.call_args_list == [
-        call(conn, "dim_regiao", ("id",), [{"id": "REG"}]),
-        call(conn, "ponte_indicador_topico", ("id",), links),
+        call(conn, "regiao", ("id",), [{"id": "REG"}]),
+        call(conn, "indicador_topico", ("id",), links),
     ]
     delete.assert_called_once_with(conn, ["AA"], [("AA", 1)])
     assert [(r.table, r.rows_read, r.rows_written) for r in results] == [
-        ("dim_regiao", 1, 1),
-        ("ponte_indicador_topico", 1, 3),
+        ("regiao", 1, 1),
+        ("indicador_topico", 1, 3),
     ]
 
 
@@ -161,7 +161,7 @@ def test_database_error_becomes_load_error(mocker: MockerFixture) -> None:
         "world_bank.pipelines.dimensions.upsert_rows",
         side_effect=psycopg.errors.ForeignKeyViolation("chave inexistente"),
     )
-    tables = [_table("dim_regiao", [{"id": "REG"}])]
+    tables = [_table("regiao", [{"id": "REG"}])]
 
     with pytest.raises(LoadError, match="chave inexistente"):
         write_tables(MagicMock(), tables, [])

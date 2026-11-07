@@ -22,8 +22,8 @@ ANOS_PAIS = "select distinct ano from gold.pais_ano order by ano desc"
 # --- Tela 1: renda e qualidade de vida ---------------------------------------------
 PAISES_ANALISADOS = """
 select paises_com_valor, paises_no_grupo, cobertura_pct
-from gold.resumo_renda_regiao
-where recorte = 'mundo' and indicador_id = 'SP.DYN.LE00.IN' and ano = %(ano)s
+from gold.resumo_anual
+where ano = %(ano)s
 """
 EXPECTATIVA_POR_RENDA = """
 select ano, nivel_renda, nivel_renda_ordem, mediana
@@ -44,17 +44,16 @@ order by populacao desc nulls last
 """
 
 DIFERENCA_RENDA = """
-select max(mediana) filter (where nivel_renda_id = 'HIC') as renda_alta,
-       max(mediana) filter (where nivel_renda_id = 'LIC') as renda_baixa,
-       max(mediana) filter (where nivel_renda_id = 'HIC')
-           - max(mediana) filter (where nivel_renda_id = 'LIC') as diferenca
-from gold.resumo_renda_regiao
-where recorte = 'renda' and indicador_id = 'SP.DYN.LE00.IN' and ano = %(ano)s
+select mediana_renda_alta as renda_alta, mediana_renda_baixa as renda_baixa,
+       diferenca_renda_anos as diferenca
+from gold.resumo_anual
+where ano = %(ano)s
 """
 BRASIL_NO_ANO = """
-select expectativa_vida, pib_per_capita_usd
-from gold.pais_ano
-where pais_iso3 = 'BRA' and ano = %(ano)s
+select brasil_expectativa_vida as expectativa_vida,
+       brasil_pib_per_capita_usd as pib_per_capita_usd
+from gold.resumo_anual
+where ano = %(ano)s
 """
 
 # --- Tela 2: PIB e crescimento -----------------------------------------------------
@@ -83,21 +82,14 @@ where {_FILTRO_REGIAO}
 order by posicao_pib_mundo nulls last, pais
 """
 BRASIL_PIB = """
-select posicao, pib_bilhoes
-from (
-    select pais_iso3, pib_usd / 1e9 as pib_bilhoes,
-           rank() over (order by pib_usd desc) as posicao
-    from gold.pais_ano
-    where ano = %(ano)s and pib_usd is not null
-) as ordem
-where pais_iso3 = 'BRA'
+select brasil_posicao_pib as posicao, brasil_pib_bilhoes as pib_bilhoes
+from gold.resumo_anual
+where ano = %(ano)s and brasil_posicao_pib is not null
 """
 MAIOR_PIB = """
-select pais, pib_usd / 1e9 as pib_bilhoes
-from gold.pais_ano
-where ano = %(ano)s and pib_usd is not null
-order by pib_usd desc
-limit 1
+select maior_pib_pais as pais, maior_pib_bilhoes as pib_bilhoes
+from gold.resumo_anual
+where ano = %(ano)s and maior_pib_pais is not null
 """
 BRASIL_CRESCIMENTO = """
 select crescimento_pib_real_pct as crescimento, posicao_pib_mundo as posicao

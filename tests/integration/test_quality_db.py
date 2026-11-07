@@ -35,7 +35,7 @@ def _database_url() -> str:
 def conn() -> Iterator[psycopg.Connection]:
     with psycopg.connect(_database_url(), autocommit=True) as connection:
         apply_migrations(connection, list_migrations())
-        row = connection.execute("select count(*) from silver.fato_observacao")
+        row = connection.execute("select count(*) from silver.observacao")
         if row.fetchone()[0] == 0:
             pytest.skip("silver sem dados: rode as cargas antes")
         yield connection
@@ -69,7 +69,7 @@ def test_every_rule_runs_and_error_rules_pass_on_real_data(
 
 
 UPDATE = (
-    "update silver.fato_observacao set valor = {value}"
+    "update silver.observacao set valor = {value}"
     " where pais_iso3 = 'BRA' and indicador_id = '{indicator}' and ano = 2023"
 )
 
@@ -90,12 +90,12 @@ UPDATE = (
         ("fato_diverge_bronze", UPDATE.format(value=1, indicator="NY.GDP.MKTP.CD")),
         (
             "faixa_ano",
-            "update silver.fato_observacao set ano = 1900"
+            "update silver.observacao set ano = 1900"
             " where pais_iso3 = 'BRA' and indicador_id = 'SP.POP.TOTL' and ano = 2023",
         ),
         (
             "completude_fato",
-            "delete from silver.fato_observacao"
+            "delete from silver.observacao"
             " where pais_iso3 = 'BRA' and indicador_id = 'SP.POP.TOTL' and ano = 2023",
         ),
     ],
@@ -161,7 +161,7 @@ def test_impossible_value_is_not_published_and_result_stays_recorded(
             run_observations(conn, MagicMock(indicators=[indicator]), 1990, 1990)
 
         published = conn.execute(
-            "select count(*) from silver.fato_observacao where ano = 1990"
+            "select count(*) from silver.observacao where ano = 1990"
         ).fetchone()
         run = conn.execute(
             "select r.status, c.passed from etl.pipeline_run r"

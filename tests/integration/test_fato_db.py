@@ -59,7 +59,7 @@ def _dimensions(conn: psycopg.Connection) -> None:
     run_id = uuid4()
     upsert_rows(
         conn,
-        "dim_pais",
+        "pais",
         ["pais_iso3"],
         [
             {
@@ -74,7 +74,7 @@ def _dimensions(conn: psycopg.Connection) -> None:
     )
     upsert_rows(
         conn,
-        "dim_fonte",
+        "fonte",
         ["fonte_id"],
         [
             {
@@ -90,7 +90,7 @@ def _dimensions(conn: psycopg.Connection) -> None:
     )
     upsert_rows(
         conn,
-        "dim_indicador",
+        "indicador",
         ["indicador_id"],
         [
             {
@@ -116,7 +116,7 @@ def _row(run_id: UUID, value: Decimal | None = Decimal("1.5")) -> dict[str, Any]
 
 def _stored(conn: psycopg.Connection) -> tuple[Any, ...] | None:
     return conn.execute(
-        "select valor, bronze_run_id from silver.fato_observacao"
+        "select valor, bronze_run_id from silver.observacao"
         " where pais_iso3 = 'T01' and indicador_id = 'T.01'"
     ).fetchone()
 
@@ -126,13 +126,13 @@ def test_upsert_twice_keeps_row_and_change_updates_it(conn: psycopg.Connection) 
 
     with conn.transaction(force_rollback=True):
         _dimensions(conn)
-        assert upsert_rows(conn, "fato_observacao", KEY, [_row(first)]) == 1
+        assert upsert_rows(conn, "observacao", KEY, [_row(first)]) == 1
 
-        assert upsert_rows(conn, "fato_observacao", KEY, [_row(uuid4())]) == 0
+        assert upsert_rows(conn, "observacao", KEY, [_row(uuid4())]) == 0
         assert _stored(conn) == (Decimal("1.5"), first)
 
         changed = [_row(second, Decimal("2.5"))]
-        assert upsert_rows(conn, "fato_observacao", KEY, changed) == 1
+        assert upsert_rows(conn, "observacao", KEY, changed) == 1
         assert _stored(conn) == (Decimal("2.5"), second)
 
 
@@ -143,29 +143,29 @@ def test_null_value_is_accepted_and_does_not_become_zero(
 
     with conn.transaction(force_rollback=True):
         _dimensions(conn)
-        upsert_rows(conn, "fato_observacao", KEY, [_row(run_id, None)])
+        upsert_rows(conn, "observacao", KEY, [_row(run_id, None)])
 
         assert _stored(conn) == (None, run_id)
 
 
 def test_unknown_country_is_rejected(conn: psycopg.Connection) -> None:
     with (
-        pytest.raises(psycopg.errors.ForeignKeyViolation, match="dim_pais"),
+        pytest.raises(psycopg.errors.ForeignKeyViolation, match="pais"),
         conn.transaction(),
     ):
         _dimensions(conn)
         unknown = {**_row(uuid4()), "pais_iso3": "NAO"}
-        upsert_rows(conn, "fato_observacao", KEY, [unknown])
+        upsert_rows(conn, "observacao", KEY, [unknown])
 
 
 def test_unknown_indicator_is_rejected(conn: psycopg.Connection) -> None:
     with (
-        pytest.raises(psycopg.errors.ForeignKeyViolation, match="dim_indicador"),
+        pytest.raises(psycopg.errors.ForeignKeyViolation, match="indicador"),
         conn.transaction(),
     ):
         _dimensions(conn)
         unknown = {**_row(uuid4()), "indicador_id": "NAO.EXISTE"}
-        upsert_rows(conn, "fato_observacao", KEY, [unknown])
+        upsert_rows(conn, "observacao", KEY, [unknown])
 
 
 def test_last_successful_run_ignores_other_status_and_params(

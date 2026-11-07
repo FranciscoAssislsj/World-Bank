@@ -38,7 +38,7 @@ from world_bank.validate.checks import (
 logger = logging.getLogger(__name__)
 
 PIPELINE = "load-observations"
-_TABLE = "fato_observacao"
+_TABLE = "observacao"
 
 
 @dataclass(frozen=True)

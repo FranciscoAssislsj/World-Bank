@@ -56,7 +56,7 @@ def transform_income_history(content: bytes, country_ids: Iterable[str]) -> list
             continue
         if country not in expected:
             raise SchemaValidationError(
-                f"{_TABLE}: código {country!r} não está em dim_pais; revise a D-039"
+                f"{_TABLE}: código {country!r} não está em pais; revise a D-039"
             )
         found.add(country)
         for column, fiscal_year, data_year in years:

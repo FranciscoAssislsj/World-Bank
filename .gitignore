@@ -8,6 +8,11 @@ specs/
 !.env.example
 data/
 
+# Power BI: cópia local dos dados e configurações da máquina (D-086)
+**/.pbi/cache.abf
+**/.pbi/localSettings.json
+*.pbix
+
 # Created by https://www.toptal.com/developers/gitignore/api/python,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,visualstudiocode
 

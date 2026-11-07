@@ -1,0 +1,8 @@
+relationship d85e9fe6-7eb6-54f3-aebb-0775ddb12fbc
+	fromColumn: pais_ano.ano
+	toColumn: resumo_anual.ano
+
+relationship 5cf5bd36-aedf-5ea4-8c91-c2ca8cc847f4
+	fromColumn: pais_ano.pais_iso3
+	toColumn: ranking_crescimento.pais_iso3
+

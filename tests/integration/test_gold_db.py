@@ -36,7 +36,7 @@ def _database_url() -> str:
 def conn() -> Iterator[psycopg.Connection]:
     with psycopg.connect(_database_url(), autocommit=True) as connection:
         apply_migrations(connection, list_migrations())
-        row = connection.execute("select count(*) from silver.fato_observacao")
+        row = connection.execute("select count(*) from silver.observacao")
         if row.fetchone()[0] == 0:
             pytest.skip("silver sem dados: rode as cargas antes")
         with connection.transaction(force_rollback=True):
@@ -45,7 +45,7 @@ def conn() -> Iterator[psycopg.Connection]:
 
 def _set(conn: psycopg.Connection, country: str, indicator: str, year: int, value: Any):
     conn.execute(
-        "update silver.fato_observacao set valor = %s"
+        "update silver.observacao set valor = %s"
         " where pais_iso3 = %s and indicador_id = %s and ano = %s",
         (value, country, indicator, year),
     )
@@ -60,6 +60,8 @@ def _one(conn: psycopg.Connection, query: str, *params: Any) -> tuple[Any, ...]:
 
 
 def test_every_file_runs_alone_as_a_query(conn: psycopg.Connection) -> None:
+    _build(conn)
+
     for view in load_views():
         conn.execute(f"select * from ({view.query}) as q limit 1")  # noqa: S608
 
@@ -70,7 +72,7 @@ def test_pais_ano_has_only_countries(conn: psycopg.Connection) -> None:
     assert _one(
         conn,
         "select count(*) from gold.pais_ano g"
-        " join silver.dim_pais p using (pais_iso3) where p.e_agregado",
+        " join silver.pais p using (pais_iso3) where p.e_agregado",
     ) == (0,)
 
 
@@ -99,7 +101,7 @@ def test_resumo_calculates_each_cut_for_a_planted_group(
     conn: psycopg.Connection,
 ) -> None:
     conn.execute(
-        "update silver.fato_observacao f set valor = null from silver.dim_pais p"
+        "update silver.observacao f set valor = null from silver.pais p"
         " where p.pais_iso3 = f.pais_iso3 and f.indicador_id = %s and f.ano = 2005"
         " and not p.e_agregado",
         ("SP.URB.TOTL.IN.ZS",),
@@ -159,8 +161,8 @@ def test_value_over_the_limit_is_flagged_and_stays_in_every_calculation(
     summary = _one(
         conn,
         "select g.valores_atipicos, g.media = ("
-        "  select avg(f.valor) from silver.fato_observacao f"
-        "  join silver.dim_pais p using (pais_iso3)"
+        "  select avg(f.valor) from silver.observacao f"
+        "  join silver.pais p using (pais_iso3)"
         "  where p.regiao_id = 'LCN' and f.indicador_id = g.indicador_id"
         "    and f.ano = g.ano)"
         " from gold.resumo_renda_regiao g"
@@ -318,3 +320,64 @@ def test_every_column_has_a_comment(conn: psycopg.Connection) -> None:
     ).fetchall()
 
     assert missing == []
+
+
+def test_resumo_anual_has_the_same_medians_as_resumo_renda_regiao(
+    conn: psycopg.Connection,
+) -> None:
+    """A mediana dos cartões é a mesma das linhas por faixa de renda (D-085)."""
+    _build(conn)
+
+    diferentes = conn.execute(
+        """
+        select a.ano
+        from gold.resumo_anual as a
+        join gold.resumo_renda_regiao as r
+            on r.ano = a.ano and r.recorte = 'renda'
+            and r.indicador_id = 'SP.DYN.LE00.IN' and r.nivel_renda_id in ('HIC', 'LIC')
+        where r.mediana is distinct from case r.nivel_renda_id
+            when 'HIC' then a.mediana_renda_alta else a.mediana_renda_baixa end
+        """
+    ).fetchall()
+
+    assert diferentes == []
+
+
+def test_grupo_grafico_marks_brazil_and_flagged_values(
+    conn: psycopg.Connection,
+) -> None:
+    _build(conn)
+
+    grupos = conn.execute(
+        """
+        select pais_iso3 = 'BRA', tem_valor_atipico, nivel_renda, grupo_grafico
+        from gold.pais_ano
+        """
+    ).fetchall()
+
+    for brasil, atipico, renda, grupo in grupos:
+        if brasil:
+            assert grupo == "Brasil"
+        elif atipico:
+            assert grupo == "Valor atípico"
+        else:
+            assert grupo == (renda or "Não classificado")
+
+
+def test_grupo_grafico_has_one_order_and_brazil_comes_last(
+    conn: psycopg.Connection,
+) -> None:
+    """O Power BI exige uma ordem por grupo, e o Brasil fecha a legenda (D-084)."""
+    _build(conn)
+
+    ordens = conn.execute(
+        """
+        select grupo_grafico, min(grupo_grafico_ordem), max(grupo_grafico_ordem)
+        from gold.pais_ano
+        group by grupo_grafico
+        order by 2
+        """
+    ).fetchall()
+
+    assert all(menor == maior for _, menor, maior in ordens)
+    assert ordens[-1][0] == "Brasil"

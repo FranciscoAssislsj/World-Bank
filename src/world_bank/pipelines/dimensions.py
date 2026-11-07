@@ -41,7 +41,7 @@ from world_bank.transform.income_history import transform_income_history
 
 logger = logging.getLogger(__name__)
 
-_LINKS_TABLE = "ponte_indicador_topico"
+_LINKS_TABLE = "indicador_topico"
 
 
 @dataclass(frozen=True)
@@ -118,23 +118,19 @@ def build_tables(
     link_rows = [
         row for load in indicators for row in _rows(load, transform_indicator_topics)
     ]
-    ensure_unique(indicator_rows, "dim_indicador", ["indicador_id"])
+    ensure_unique(indicator_rows, "indicador", ["indicador_id"])
     ensure_unique(link_rows, _LINKS_TABLE, ["indicador_id", "topico_id"])
     return [
-        TableRows("dim_regiao", ("regiao_id",), regions),
-        TableRows("dim_nivel_renda", ("nivel_renda_id",), income_levels),
-        TableRows("dim_tipo_emprestimo", ("tipo_emprestimo_id",), lending_types),
-        TableRows(
-            "dim_fonte", ("fonte_id",), _rows(catalogs["source"], transform_sources)
-        ),
-        TableRows(
-            "dim_topico", ("topico_id",), _rows(catalogs["topic"], transform_topics)
-        ),
-        TableRows("dim_pais", ("pais_iso3",), countries),
+        TableRows("regiao", ("regiao_id",), regions),
+        TableRows("nivel_renda", ("nivel_renda_id",), income_levels),
+        TableRows("tipo_emprestimo", ("tipo_emprestimo_id",), lending_types),
+        TableRows("fonte", ("fonte_id",), _rows(catalogs["source"], transform_sources)),
+        TableRows("topico", ("topico_id",), _rows(catalogs["topic"], transform_topics)),
+        TableRows("pais", ("pais_iso3",), countries),
         TableRows(
             "classificacao_renda_anual", ("pais_iso3", "ano_referencia"), income_rows
         ),
-        TableRows("dim_indicador", ("indicador_id",), indicator_rows),
+        TableRows("indicador", ("indicador_id",), indicator_rows),
         TableRows(_LINKS_TABLE, ("indicador_id", "topico_id"), link_rows),
     ]
 

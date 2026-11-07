@@ -14,9 +14,9 @@ from world_bank.load.postgres import connect
 OUTPUT = Path(__file__).resolve().parents[1] / "docs" / "dicionario-dados.md"
 
 SCHEMAS = {
-    "gold": "Indicadores prontos para os dashboards. Cada view vem de um arquivo em "
-    "`sql/gold/`.",
-    "silver": "Dado limpo, tipado e ligado por chaves. É a camada para consultar.",
+    "gold": "Modelo estrela e indicadores prontos para os dashboards. Cada view vem "
+    "de um arquivo em `sql/gold/`.",
+    "silver": "Tratamento: dado limpo, tipado e ligado por chaves.",
     "bronze": "Dado como veio da fonte, sem alteração. Serve para auditar.",
     "etl": "Controle do pipeline.",
 }
@@ -39,7 +39,7 @@ VALUE_TYPES = {
 HEADER = """# Dicionário de dados
 
 Colunas de cada tabela, com o tipo de valor e o que significam. Veja também o
-[diagrama das ligações](modelagem-silver.svg) e os motivos das decisões em
+[diagrama das ligações](modelagem-gold.svg) e os motivos das decisões em
 [data-decisions.md](data-decisions.md).
 
 > Gerado por `scripts/gerar_dicionario.py` a partir do banco. Não edite à mão: para

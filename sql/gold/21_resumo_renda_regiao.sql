@@ -1,8 +1,8 @@
 -- gold.resumo_renda_regiao
 -- Pergunta de negócio: Como cada indicador evolui por nível de renda e por região, incluindo pobreza e desigualdade?
 -- Grão (o que é uma linha): um indicador em um ano, em um recorte (renda_regiao, renda, regiao ou mundo).
--- Origem: silver.nome_portugues, silver.fato_observacao, silver.dim_pais, silver.dim_regiao, silver.dim_nivel_renda, silver.dim_indicador, silver.classificacao_renda_anual, silver.valor_atipico
--- Regras: Nomes em português, com o original guardado na silver (D-082). só países, sem agregados (D-023). A renda é a daquele ano, e país sem classificação sai só dos recortes de renda (D-059). Os recortes vêm prontos porque mediana não se soma; filtre por recorte para não contar em dobro (D-060). Média simples e mediana, sem ponderar (D-061). A média e a mediana usam todos os valores da silver, sem exclusão, e valores_atipicos avisa quantos foram apontados (D-062, D-070). A contagem de países mostra a cobertura (D-063).
+-- Origem: gold.fato_observacao, gold.dim_pais, gold.fato_renda_anual, gold.valores_atipicos, gold.dim_indicador, gold.dim_nivel_renda, gold.dim_regiao
+-- Regras: Nomes em português, vindos das dimensões (D-082). só países, sem agregados (D-023). A renda é a daquele ano, e país sem classificação sai só dos recortes de renda (D-059). Os recortes vêm prontos porque mediana não se soma; filtre por recorte para não contar em dobro (D-060). Média simples e mediana, sem ponderar (D-061). A média e a mediana usam todos os valores da silver, sem exclusão, e valores_atipicos avisa quantos foram apontados (D-062, D-070). A contagem de países mostra a cobertura (D-063).
 -- Chave: recorte, ano, indicador_id, nivel_renda_id, regiao_id
 -- Coluna recorte: renda_regiao, renda, regiao ou mundo (D-060).
 -- Coluna ano: Ano da observação.
@@ -30,11 +30,11 @@ with base as (
         c.nivel_renda_id,
         f.valor,
         a.pais_iso3 is not null as atipico
-    from silver.fato_observacao as f
-    join silver.dim_pais as p on p.pais_iso3 = f.pais_iso3 and not p.e_agregado
-    left join silver.classificacao_renda_anual as c
+    from gold.fato_observacao as f
+    join gold.dim_pais as p on p.pais_iso3 = f.pais_iso3 and not p.e_agregado
+    left join gold.fato_renda_anual as c
         on c.pais_iso3 = f.pais_iso3 and c.ano_referencia = f.ano
-    left join silver.valor_atipico as a
+    left join gold.valores_atipicos as a
         on a.pais_iso3 = f.pais_iso3
         and a.indicador_id = f.indicador_id
         and a.ano = f.ano
@@ -70,12 +70,12 @@ select
     s.recorte,
     s.ano,
     s.indicador_id,
-    silver.nome_pt('indicador', i.indicador_id, i.nome) as indicador,
+    i.nome as indicador,
     s.nivel_renda_id,
-    silver.nome_pt('renda', n.nivel_renda_id, n.nome) as nivel_renda,
+    n.nome as nivel_renda,
     n.ordem as nivel_renda_ordem,
     s.regiao_id,
-    silver.nome_pt('regiao', r.regiao_id, r.nome) as regiao,
+    r.nome as regiao,
     s.media,
     s.mediana,
     s.paises_com_valor,
@@ -85,6 +85,6 @@ select
     s.valores_atipicos,
     s.casas_decimais
 from resumo as s
-join silver.dim_indicador as i on i.indicador_id = s.indicador_id
-left join silver.dim_nivel_renda as n on n.nivel_renda_id = s.nivel_renda_id
-left join silver.dim_regiao as r on r.regiao_id = s.regiao_id;
+join gold.dim_indicador as i on i.indicador_id = s.indicador_id
+left join gold.dim_nivel_renda as n on n.nivel_renda_id = s.nivel_renda_id
+left join gold.dim_regiao as r on r.regiao_id = s.regiao_id;

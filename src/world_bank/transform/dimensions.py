@@ -47,7 +47,7 @@ def clean_text(value: Any) -> str | None:
 
 
 def transform_regions(records: Iterable[Record]) -> list[Row]:
-    """Monta as linhas de ``silver.dim_regiao``.
+    """Monta as linhas de ``silver.regiao``.
 
     Args:
         records: Registros do endpoint ``region``.
@@ -58,7 +58,7 @@ def transform_regions(records: Iterable[Record]) -> list[Row]:
     Raises:
         SchemaValidationError: Se faltar campo obrigatório ou a chave repetir.
     """
-    table = "dim_regiao"
+    table = "regiao"
     rows = [
         {
             "regiao_id": _required(record, table, "code"),
@@ -72,7 +72,7 @@ def transform_regions(records: Iterable[Record]) -> list[Row]:
 
 
 def transform_income_levels(records: Iterable[Record]) -> list[Row]:
-    """Monta as linhas de ``silver.dim_nivel_renda``.
+    """Monta as linhas de ``silver.nivel_renda``.
 
     Args:
         records: Registros do endpoint ``incomelevel``.
@@ -84,7 +84,7 @@ def transform_income_levels(records: Iterable[Record]) -> list[Row]:
         SchemaValidationError: Se faltar campo obrigatório, o código não for
             conhecido ou a chave repetir.
     """
-    table = "dim_nivel_renda"
+    table = "nivel_renda"
     rows = []
     for record in records:
         level_id = _required(record, table, "id")
@@ -107,7 +107,7 @@ def transform_income_levels(records: Iterable[Record]) -> list[Row]:
 
 
 def transform_lending_types(records: Iterable[Record]) -> list[Row]:
-    """Monta as linhas de ``silver.dim_tipo_emprestimo``.
+    """Monta as linhas de ``silver.tipo_emprestimo``.
 
     Args:
         records: Registros do endpoint ``lendingtypes``.
@@ -118,7 +118,7 @@ def transform_lending_types(records: Iterable[Record]) -> list[Row]:
     Raises:
         SchemaValidationError: Se faltar campo obrigatório ou a chave repetir.
     """
-    table = "dim_tipo_emprestimo"
+    table = "tipo_emprestimo"
     rows = [
         {
             "tipo_emprestimo_id": _required(record, table, "id"),
@@ -131,7 +131,7 @@ def transform_lending_types(records: Iterable[Record]) -> list[Row]:
 
 
 def transform_sources(records: Iterable[Record]) -> list[Row]:
-    """Monta as linhas de ``silver.dim_fonte``.
+    """Monta as linhas de ``silver.fonte``.
 
     Args:
         records: Registros do endpoint ``sources``.
@@ -143,7 +143,7 @@ def transform_sources(records: Iterable[Record]) -> list[Row]:
         SchemaValidationError: Se faltar campo obrigatório, um valor não puder
             ser convertido ou a chave repetir.
     """
-    table = "dim_fonte"
+    table = "fonte"
     rows = [
         {
             "fonte_id": _integer(record, table, "id"),
@@ -160,7 +160,7 @@ def transform_sources(records: Iterable[Record]) -> list[Row]:
 
 
 def transform_topics(records: Iterable[Record]) -> list[Row]:
-    """Monta as linhas de ``silver.dim_topico``.
+    """Monta as linhas de ``silver.topico``.
 
     Args:
         records: Registros do endpoint ``topic``.
@@ -172,7 +172,7 @@ def transform_topics(records: Iterable[Record]) -> list[Row]:
         SchemaValidationError: Se faltar campo obrigatório, o ``id`` não for
             inteiro ou a chave repetir.
     """
-    table = "dim_topico"
+    table = "topico"
     rows = [
         {
             "topico_id": _integer(record, table, "id"),
@@ -190,7 +190,7 @@ def transform_countries(
     income_level_ids: Iterable[str],
     lending_type_ids: Iterable[str],
 ) -> list[Row]:
-    """Monta as linhas de ``silver.dim_pais``.
+    """Monta as linhas de ``silver.pais``.
 
     Os códigos das dimensões servem para classificar os agregados: o agregado de
     uma região tem o mesmo código da região (D-034).
@@ -208,7 +208,7 @@ def transform_countries(
         SchemaValidationError: Se faltar campo obrigatório, a coordenada for
             inválida ou a chave repetir.
     """
-    table = "dim_pais"
+    table = "pais"
     regions, income_levels = set(region_ids), set(income_level_ids)
     lending_types = set(lending_type_ids)
     rows = []
@@ -239,7 +239,7 @@ def transform_countries(
 
 
 def transform_indicators(records: Iterable[Record]) -> list[Row]:
-    """Monta as linhas de ``silver.dim_indicador``.
+    """Monta as linhas de ``silver.indicador``.
 
     Args:
         records: Registros de ``indicator/{id}``.
@@ -251,7 +251,7 @@ def transform_indicators(records: Iterable[Record]) -> list[Row]:
         SchemaValidationError: Se faltar campo obrigatório, a fonte não for
             inteira ou a chave repetir.
     """
-    table = "dim_indicador"
+    table = "indicador"
     rows = [
         {
             "indicador_id": _required(record, table, "id"),
@@ -266,7 +266,7 @@ def transform_indicators(records: Iterable[Record]) -> list[Row]:
 
 
 def transform_indicator_topics(records: Iterable[Record]) -> list[Row]:
-    """Monta as linhas de ``silver.ponte_indicador_topico``.
+    """Monta as linhas de ``silver.indicador_topico``.
 
     A ligação usa o ``id`` do tópico, porque o nome vem com espaço sobrando.
 
@@ -280,7 +280,7 @@ def transform_indicator_topics(records: Iterable[Record]) -> list[Row]:
         SchemaValidationError: Se faltar ``topics``, um ``id`` for inválido ou a
             ligação repetir.
     """
-    table = "ponte_indicador_topico"
+    table = "indicador_topico"
     rows = []
     for record in records:
         indicator_id = _required(record, table, "id")

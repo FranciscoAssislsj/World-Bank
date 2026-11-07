@@ -18,7 +18,7 @@ from world_bank.load.gold import (
 HEADER = """-- gold.exemplo
 -- Pergunta de negócio: Quanto?
 -- Grão (o que é uma linha): um país.
--- Origem: silver.dim_pais
+-- Origem: silver.pais
 -- Regras: nenhuma (D-000).
 -- Chave: pais_iso3, ano
 -- Coluna pais_iso3: Código.
@@ -60,7 +60,7 @@ def test_parse_view_rejects_first_line_with_other_name() -> None:
     [
         "-- Pergunta de negócio: Quanto?\n",
         "-- Grão (o que é uma linha): um país.\n",
-        "-- Origem: silver.dim_pais\n",
+        "-- Origem: silver.pais\n",
         "-- Regras: nenhuma (D-000).\n",
         "-- Chave: pais_iso3, ano\n",
     ],
@@ -94,11 +94,27 @@ def test_parse_view_rejects_two_statements() -> None:
 
 
 def test_load_views_reads_directory_in_name_order(tmp_path: Path) -> None:
-    for name in ("b", "a"):
+    for file_name, name in (("20_a", "a"), ("10_b", "b")):
         text = HEADER.replace("gold.exemplo", f"gold.{name}") + "select 1;"
-        (tmp_path / f"{name}.sql").write_text(text, encoding="utf-8")
+        (tmp_path / f"{file_name}.sql").write_text(text, encoding="utf-8")
 
-    assert [view.name for view in load_views(tmp_path)] == ["a", "b"]
+    assert [view.name for view in load_views(tmp_path)] == ["b", "a"]
+
+
+def test_load_views_rejects_file_without_number(tmp_path: Path) -> None:
+    (tmp_path / "exemplo.sql").write_text(HEADER + "select 1;", encoding="utf-8")
+
+    with pytest.raises(ConfigurationError, match="NN_nome"):
+        load_views(tmp_path)
+
+
+def test_load_views_rejects_repeated_name(tmp_path: Path) -> None:
+    for number in ("10", "20"):
+        path = tmp_path / f"{number}_exemplo.sql"
+        path.write_text(HEADER + "select 1;", encoding="utf-8")
+
+    with pytest.raises(ConfigurationError, match="repetidos"):
+        load_views(tmp_path)
 
 
 def test_load_views_fails_on_empty_directory(tmp_path: Path) -> None:
@@ -106,25 +122,43 @@ def test_load_views_fails_on_empty_directory(tmp_path: Path) -> None:
         load_views(tmp_path)
 
 
-def test_project_files_are_valid_and_read_only_silver() -> None:
-    views = load_views()
+def test_project_has_the_star_before_the_consumption_views() -> None:
+    names = [view.name for view in load_views()]
 
-    assert {view.name for view in views} == {
+    assert names == [
+        "dim_regiao",
+        "dim_nivel_renda",
+        "dim_tipo_emprestimo",
+        "dim_fonte",
+        "dim_topico",
+        "dim_pais",
+        "dim_indicador",
+        "ponte_indicador_topico",
+        "fato_observacao",
+        "fato_renda_anual",
+        "valores_atipicos",
         "pais_ano",
+        "resumo_renda_regiao",
+        "resumo_anual",
         "ranking_crescimento",
         "reconciliacao_agregados",
-        "resumo_renda_regiao",
-        "valores_atipicos",
-    }
-    for view in views:
-        assert " gold." not in view.query  # cada view lê só a silver (D-057)
+    ]
+
+
+def test_star_reads_silver_and_consumption_reads_only_gold() -> None:
+    """A silver trata, a estrela publica, e o consumo lê só a estrela (D-087)."""
+    for view in load_views():
         assert set(view.key) <= view.columns.keys()
+        if view.name.startswith(("dim_", "fato_", "ponte_")):
+            assert " gold." not in view.query
+        elif view.name != "valores_atipicos":  # o aviso vem da silver, com as dims
+            assert "silver." not in view.query
 
 
 def test_every_configured_indicator_is_a_column_of_pais_ano() -> None:
     configs = GOLD_DIR.parents[1] / "configs"
     settings = load_settings(config_dir=configs)
-    text = (GOLD_DIR / "pais_ano.sql").read_text(encoding="utf-8")
+    text = (GOLD_DIR / "20_pais_ano.sql").read_text(encoding="utf-8")
 
     missing = [code for code in settings.indicators if f"'{code}'" not in text]
 

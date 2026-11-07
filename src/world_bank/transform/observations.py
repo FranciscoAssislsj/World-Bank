@@ -1,4 +1,4 @@
-"""Transforma as observações da API em linhas de ``silver.fato_observacao``.
+"""Transforma as observações da API em linhas de ``silver.observacao``.
 
 Função pura (D-031): recebe os registros como vieram da API e devolve as linhas
 limpas. Um dado fora do esperado gera ``SchemaValidationError`` (D-006).
@@ -11,7 +11,7 @@ from typing import Any
 from world_bank.exceptions import SchemaValidationError
 from world_bank.transform.dimensions import Record, Row, clean_text
 
-_TABLE = "fato_observacao"
+_TABLE = "observacao"
 KEY_COLUMNS = ("pais_iso3", "indicador_id", "ano")
 
 
@@ -20,7 +20,7 @@ def transform_observations(
     country_codes: Mapping[str, str],
     indicator_ids: Collection[str],
 ) -> list[Row]:
-    """Monta as linhas de ``silver.fato_observacao``.
+    """Monta as linhas de ``silver.observacao``.
 
     O país é encontrado pelo ``country.id``, e não pelo ``countryiso3code``, que
     vem vazio em alguns agregados (D-041). Valor nulo é mantido (D-042).
@@ -63,7 +63,7 @@ def _country(record: Record, country_codes: Mapping[str, str]) -> str:
     code = _nested_id(record, "country")
     if code not in country_codes:
         raise SchemaValidationError(
-            f"{_TABLE}: país {code!r} não está em dim_pais; rode load-dimensions"
+            f"{_TABLE}: país {code!r} não está em pais; rode load-dimensions"
         )
     return country_codes[code]
 
