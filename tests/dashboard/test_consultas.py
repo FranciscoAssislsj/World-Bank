@@ -49,6 +49,7 @@ def test_ler_troca_decimal_por_float(mocker: MockerFixture) -> None:
     assert linhas == [{"pais": "Brazil", "valor": 1.5, "ano": 2023}]
     assert isinstance(linhas[0]["valor"], float)
     conn.execute.assert_called_once_with("select 1", {"ano": 2023})
+    assert connect.call_args.kwargs["connect_timeout"] > 0
 
 
 def test_ler_transforma_erro_do_banco(mocker: MockerFixture) -> None:

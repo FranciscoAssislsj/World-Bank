@@ -15,6 +15,9 @@ from world_bank.exceptions import LoadError
 
 Linha = dict[str, Any]
 
+# Com o banco desligado, a tela avisa logo, em vez de ficar parada.
+_CONNECT_TIMEOUT_SECONDS = 10
+
 _FILTRO_REGIAO = "(%(regiao)s::text is null or regiao = %(regiao)s)"
 
 ANOS_PAIS = "select distinct ano from gold.pais_ano order by ano desc"
@@ -118,7 +121,9 @@ def ler(url: str, consulta: str, params: dict[str, Any] | None = None) -> list[L
         LoadError: Se o banco estiver desligado ou a consulta falhar.
     """
     try:
-        with psycopg.connect(url, row_factory=dict_row) as conn:
+        with psycopg.connect(
+            url, row_factory=dict_row, connect_timeout=_CONNECT_TIMEOUT_SECONDS
+        ) as conn:
             linhas = conn.execute(consulta, params or {}).fetchall()
     except psycopg.Error as exc:
         raise LoadError(f"não foi possível ler a gold: {exc}") from exc

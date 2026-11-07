@@ -15,6 +15,7 @@ from world_bank.exceptions import ConfigurationError, LoadError, MigrationError
 from world_bank.extract.client import ApiPage
 from world_bank.load import postgres
 from world_bank.load.postgres import (
+    CONNECT_TIMEOUT_SECONDS,
     MIGRATIONS_DIR,
     BronzeLoad,
     Migration,
@@ -184,7 +185,9 @@ def test_connect_uses_database_url_in_autocommit(
 
     connect(load_settings(config_dir=config_dir))
 
-    fake_connect.assert_called_once_with(fake_database_url, autocommit=True)
+    fake_connect.assert_called_once_with(
+        fake_database_url, autocommit=True, connect_timeout=CONNECT_TIMEOUT_SECONDS
+    )
 
 
 def test_json_hash_ignores_key_order() -> None:
