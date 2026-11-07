@@ -1,0 +1,137 @@
+cultureInfo pt-BR
+
+	linguisticMetadata =
+			{
+			  "Version": "2.0.0",
+			  "Language": "en-US",
+			  "Entities": {
+			    "ranking_crescimento.posicao_pib_mundo": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "ranking_crescimento",
+			          "ConceptualProperty": "posicao_pib_mundo"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Pos. mundo": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "ranking_crescimento.pais": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "ranking_crescimento",
+			          "ConceptualProperty": "pais"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "País": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "ranking_crescimento.regiao": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "ranking_crescimento",
+			          "ConceptualProperty": "regiao"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Região": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "ranking_crescimento.nivel_renda_atual": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "ranking_crescimento",
+			          "ConceptualProperty": "nivel_renda_atual"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Faixa de renda atual": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "ranking_crescimento.crescimento_pib_real_pct": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "ranking_crescimento",
+			          "ConceptualProperty": "crescimento_pib_real_pct"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Crescimento, em %": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "ranking_crescimento.posicao_pib_regiao": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "ranking_crescimento",
+			          "ConceptualProperty": "posicao_pib_regiao"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Pos. região": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    }
+			  }
+			}
+		contentType: json
+

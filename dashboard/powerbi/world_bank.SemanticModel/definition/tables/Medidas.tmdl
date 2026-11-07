@@ -1,0 +1,94 @@
+table Medidas
+	lineageTag: a6c9b5bf-de3b-5f0e-8406-a1403b38e3f8
+
+	measure 'Países analisados' = SELECTEDVALUE(resumo_anual[paises_com_valor]) & " de " & SELECTEDVALUE(resumo_anual[paises_no_grupo])
+		lineageTag: 98c07a1e-b84a-5321-a6dc-df66cfd3b6a9
+
+	measure 'Cobertura, texto' = "cobertura de " & FORMAT(SELECTEDVALUE(resumo_anual[cobertura_pct]), "#,0", "pt-BR") & "%"
+		lineageTag: 2289dabd-0a3e-5944-860f-e312e275e07e
+
+	measure 'Diferença de renda, texto' = VAR v = SELECTEDVALUE(resumo_anual[diferenca_renda_anos]) RETURN IF(ISBLANK(v), "sem dado", FORMAT(v, "#,0.0", "pt-BR") & " anos")
+		lineageTag: 0906768b-2520-54a4-bc96-7b64cac8a281
+
+	measure 'Diferença de renda, detalhe' = "de expectativa de vida em " & SELECTEDVALUE(resumo_anual[ano])
+		lineageTag: 2aebf983-18e5-5c56-a55f-7506c5c84261
+
+	measure 'Brasil, vida' = VAR v = SELECTEDVALUE(resumo_anual[brasil_expectativa_vida]) RETURN IF(ISBLANK(v), "sem dado", FORMAT(v, "#,0.0", "pt-BR") & " anos")
+		lineageTag: 39530abe-20ff-5de0-9619-01c94c7a6cb0
+
+	measure 'Ano, detalhe' = "em " & SELECTEDVALUE(resumo_anual[ano])
+		lineageTag: df82b48b-62df-5cbc-939f-5b36c2be7a43
+
+	measure 'Título da renda' = "Renda alta vive " & FORMAT(SELECTEDVALUE(resumo_anual[diferenca_renda_anos]), "#,0.0", "pt-BR") & " anos a mais que renda baixa"
+		lineageTag: 7f24bddd-1c98-5795-bf02-d4f7a8a93380
+
+	measure 'Título da dispersão' = "Brasil: US$ " & FORMAT(SELECTEDVALUE(resumo_anual[brasil_pib_per_capita_usd]), "#,0", "pt-BR") & " por pessoa e " & [Brasil, vida] & " de vida"
+		lineageTag: 259ff3ac-8f30-57d9-a0b4-c9e548cdd94b
+
+	measure 'Subtítulo da dispersão' = "Cada bolha é um país em " & SELECTEDVALUE(resumo_anual[ano]) & ". Mais à direita = mais rico. Mais acima = vive mais. Vermelho = valor atípico."
+		lineageTag: d665b166-c672-52dd-9b76-b12fd0fb4f77
+
+	measure 'PIB, em US$ bilhões' = DIVIDE(SUM(pais_ano[pib_usd]), 1E9)
+		formatString: #,0
+		lineageTag: 6319b02b-2d5d-5eba-82e3-4718d9ace3c9
+
+	measure 'Maior PIB, país' = SELECTEDVALUE(resumo_anual[maior_pib_pais], "sem dado")
+		lineageTag: 1f732f39-16af-5e22-b250-528194d7545e
+
+	measure 'Maior PIB, detalhe' = "US$ " & FORMAT(SELECTEDVALUE(resumo_anual[maior_pib_bilhoes]), "#,0", "pt-BR") & " bilhões em " & SELECTEDVALUE(resumo_anual[ano])
+		lineageTag: b2e3ca2f-a453-50b7-b9b1-d80ce5db30d3
+
+	measure 'Brasil, posição no PIB' = VAR v = SELECTEDVALUE(resumo_anual[brasil_posicao_pib]) RETURN IF(ISBLANK(v), "sem dado", v & "º")
+		lineageTag: 66c72a54-976d-5643-a95b-496fc11fbbc5
+
+	measure 'Brasil, PIB detalhe' = "US$ " & FORMAT(SELECTEDVALUE(resumo_anual[brasil_pib_bilhoes]), "#,0", "pt-BR") & " bilhões em " & SELECTEDVALUE(resumo_anual[ano])
+		lineageTag: 7e4db2fb-2bb6-5134-9b2c-07c0b1b681ec
+
+	measure 'Período do ranking' = "de " & MAX(ranking_crescimento[ano_inicial]) & " a " & MAX(ranking_crescimento[ano_final])
+		lineageTag: 470380e2-074d-56a0-bbf4-aacacc138ea8
+
+	measure 'Líder do crescimento' = VAR p = MIN(ranking_crescimento[posicao_pib_mundo]) RETURN IF(ISBLANK(p), "sem dado", CALCULATE(MIN(ranking_crescimento[pais]), ranking_crescimento[posicao_pib_mundo] = p))
+		lineageTag: 54667e6d-25f8-559c-8790-14c334a8a32a
+
+	measure 'Líder do crescimento, detalhe' = VAR p = MIN(ranking_crescimento[posicao_pib_mundo]) VAR c = CALCULATE(MIN(ranking_crescimento[crescimento_pib_real_pct]), ranking_crescimento[posicao_pib_mundo] = p) RETURN FORMAT(c, "+#,0.0;−#,0.0", "pt-BR") & "% " & [Período do ranking]
+		lineageTag: eb6066c7-8448-54cc-a155-47c36e273d02
+
+	measure 'Brasil, posição no crescimento' = VAR v = CALCULATE(MIN(ranking_crescimento[posicao_pib_mundo]), REMOVEFILTERS(ranking_crescimento), ranking_crescimento[pais_iso3] = "BRA") RETURN IF(ISBLANK(v), "sem dado", v & "º")
+		lineageTag: bef89ded-14e8-5ffd-a847-1895a6e7f125
+
+	measure 'Brasil, crescimento detalhe' = VAR c = CALCULATE(MIN(ranking_crescimento[crescimento_pib_real_pct]), REMOVEFILTERS(ranking_crescimento), ranking_crescimento[pais_iso3] = "BRA") RETURN FORMAT(c, "+#,0.0;−#,0.0", "pt-BR") & "% " & CALCULATE([Período do ranking], REMOVEFILTERS(ranking_crescimento))
+		lineageTag: da7d5785-d53f-5dcd-8a58-799636e913f0
+
+	measure 'Título dos maiores PIBs' = VAR lider = TOPN(1, FILTER(VALUES(pais_ano[pais]), NOT ISBLANK([PIB, em US$ bilhões])), [PIB, em US$ bilhões], DESC) RETURN MINX(lider, pais_ano[pais]) & " lidera os maiores PIBs"
+		lineageTag: f6d8c590-b6ef-540a-8f69-f74f06ec26c9
+
+	measure 'Subtítulo dos maiores PIBs' = "Em " & SELECTEDVALUE(resumo_anual[ano]) & ", em US$ bilhões. O Brasil é o " & [Brasil, posição no PIB] & "."
+		lineageTag: ab536b89-7ca8-55b5-812f-1c301e736a5b
+
+	measure 'Título do crescimento' = [Líder do crescimento] & " lidera o crescimento " & [Período do ranking]
+		lineageTag: 67a247f9-38ba-52a8-9595-dcf64d4802d4
+
+	measure 'Subtítulo do crescimento' = "Crescimento real do PIB, sem a inflação. O Brasil é o " & [Brasil, posição no crescimento] & ". Role para ver todos os países."
+		lineageTag: 7ad4b51b-c021-5ea4-bfa0-44a3c73036a2
+
+	measure 'Cor da barra de PIB' = IF(SELECTEDVALUE(pais_ano[pais]) = "Brasil", "#eb6834", "#a9b0b8")
+		lineageTag: b84c8b27-ab6b-5e00-bbba-eb98e9eda1ec
+
+	measure 'Cor do texto do ranking' = IF(SELECTEDVALUE(ranking_crescimento[pais]) = "Brasil", "#c94f1f", "#0b0b0b")
+		lineageTag: 68783744-f5ce-5ce8-af1a-e11b9c999d8a
+
+	column Medidas
+		dataType: string
+		isHidden
+		lineageTag: 44749f1e-e05b-555c-a60d-a76298fd44f8
+		summarizeBy: none
+		sourceColumn: Medidas
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Medidas = m
+		mode: import
+		source = #table(type table [Medidas = text], {})
+
+	annotation PBI_ResultType = Table
+

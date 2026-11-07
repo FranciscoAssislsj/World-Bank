@@ -1,0 +1,50 @@
+table resumo_renda_regiao
+	lineageTag: eba12f97-35ef-55f5-9cd4-47c90e9a7ac5
+
+	column ano
+		dataType: int64
+		formatString: 0
+		lineageTag: 3ad80e90-d1de-59db-9852-0c6ab978dda5
+		summarizeBy: none
+		sourceColumn: ano
+
+		annotation SummarizationSetBy = Automatic
+
+	column nivel_renda
+		dataType: string
+		lineageTag: b543fc0c-d609-5ce9-b8ce-f70c75d67d81
+		summarizeBy: none
+		sourceColumn: nivel_renda
+		sortByColumn: nivel_renda_ordem
+
+		annotation SummarizationSetBy = Automatic
+
+	column nivel_renda_ordem
+		dataType: int64
+		formatString: 0
+		lineageTag: 5c69a1ff-58d7-59bc-bc34-7e362807c424
+		summarizeBy: none
+		sourceColumn: nivel_renda_ordem
+
+		annotation SummarizationSetBy = Automatic
+
+	column mediana
+		dataType: double
+		formatString: #,0.0
+		lineageTag: 919c90ef-5e4c-55b1-9526-33ff72f9dac5
+		summarizeBy: none
+		sourceColumn: mediana
+
+		annotation SummarizationSetBy = Automatic
+
+	partition resumo_renda_regiao = m
+		mode: import
+		source =
+				let
+				    Fonte = PostgreSQL.Database(ServidorBanco, NomeBanco),
+				    Consulta = Value.NativeQuery(Fonte, "select ano, nivel_renda, nivel_renda_ordem, mediana from gold.resumo_renda_regiao where recorte = 'renda' and indicador_id = 'SP.DYN.LE00.IN'")
+				in
+				    Consulta
+
+	annotation PBI_ResultType = Table
+

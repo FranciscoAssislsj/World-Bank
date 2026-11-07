@@ -1,0 +1,35 @@
+{
+  "name": "World Bank, tema do projeto",
+  "dataColors": [
+    "#2a78d6",
+    "#1baf7a",
+    "#eda100",
+    "#e87ba4",
+    "#008300",
+    "#6250d6",
+    "#73787e"
+  ],
+  "foreground": "#0b0b0b",
+  "background": "#ffffff",
+  "tableAccent": "#0d366b",
+  "good": "#1baf7a",
+  "bad": "#d03b3b",
+  "neutral": "#eda100",
+  "textClasses": {
+    "title": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 14,
+      "color": "#0b0b0b"
+    },
+    "label": {
+      "fontFace": "Segoe UI",
+      "fontSize": 10,
+      "color": "#52514e"
+    },
+    "callout": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 22,
+      "color": "#0b0b0b"
+    }
+  }
+}

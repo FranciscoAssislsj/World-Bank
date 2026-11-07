@@ -1,0 +1,130 @@
+table resumo_anual
+	lineageTag: af8adc7a-d444-5c8b-aa81-19c859454287
+
+	column ano
+		dataType: int64
+		formatString: 0
+		lineageTag: 9d6cfd5e-6b0e-5755-8c18-dd9a39540355
+		summarizeBy: none
+		sourceColumn: ano
+
+		annotation SummarizationSetBy = Automatic
+
+	column paises_com_valor
+		dataType: int64
+		formatString: 0
+		lineageTag: a937a4ca-f6d9-529c-9e00-8e5d88ad6263
+		summarizeBy: none
+		sourceColumn: paises_com_valor
+
+		annotation SummarizationSetBy = Automatic
+
+	column paises_no_grupo
+		dataType: int64
+		formatString: 0
+		lineageTag: 147f8048-ae52-5e2b-aba9-b79ba54be18e
+		summarizeBy: none
+		sourceColumn: paises_no_grupo
+
+		annotation SummarizationSetBy = Automatic
+
+	column cobertura_pct
+		dataType: double
+		formatString: #,0.0
+		lineageTag: 525a40b9-da1e-5eee-8c13-240b132f5376
+		summarizeBy: none
+		sourceColumn: cobertura_pct
+
+		annotation SummarizationSetBy = Automatic
+
+	column mediana_renda_alta
+		dataType: double
+		formatString: #,0.0
+		lineageTag: e2dc2556-e9a1-57ab-a1c6-eaddaab74dae
+		summarizeBy: none
+		sourceColumn: mediana_renda_alta
+
+		annotation SummarizationSetBy = Automatic
+
+	column mediana_renda_baixa
+		dataType: double
+		formatString: #,0.0
+		lineageTag: eb35b71f-b80c-58e6-9de8-e5785c3585b0
+		summarizeBy: none
+		sourceColumn: mediana_renda_baixa
+
+		annotation SummarizationSetBy = Automatic
+
+	column diferenca_renda_anos
+		dataType: double
+		formatString: #,0.0
+		lineageTag: 38a2d071-b7b6-5192-ba2d-05cbc2f18030
+		summarizeBy: none
+		sourceColumn: diferenca_renda_anos
+
+		annotation SummarizationSetBy = Automatic
+
+	column maior_pib_pais
+		dataType: string
+		lineageTag: d73e4a68-460d-50e6-ad4e-f11dfd089e33
+		summarizeBy: none
+		sourceColumn: maior_pib_pais
+
+		annotation SummarizationSetBy = Automatic
+
+	column maior_pib_bilhoes
+		dataType: double
+		formatString: #,0
+		lineageTag: 8fb8bd46-838a-598a-9146-851d505bc375
+		summarizeBy: none
+		sourceColumn: maior_pib_bilhoes
+
+		annotation SummarizationSetBy = Automatic
+
+	column brasil_expectativa_vida
+		dataType: double
+		formatString: #,0.0
+		lineageTag: 812d1bf4-7380-5d0b-a8cb-970a8b769d47
+		summarizeBy: none
+		sourceColumn: brasil_expectativa_vida
+
+		annotation SummarizationSetBy = Automatic
+
+	column brasil_pib_per_capita_usd
+		dataType: double
+		formatString: #,0
+		lineageTag: c680c492-00fd-5fb0-a504-a8be257ab4aa
+		summarizeBy: none
+		sourceColumn: brasil_pib_per_capita_usd
+
+		annotation SummarizationSetBy = Automatic
+
+	column brasil_pib_bilhoes
+		dataType: double
+		formatString: #,0
+		lineageTag: a5b1e69a-15a9-5aa3-b8c2-8d4ff4327b58
+		summarizeBy: none
+		sourceColumn: brasil_pib_bilhoes
+
+		annotation SummarizationSetBy = Automatic
+
+	column brasil_posicao_pib
+		dataType: int64
+		formatString: 0
+		lineageTag: 92c1ca08-1b97-530e-ba10-cee52f986b32
+		summarizeBy: none
+		sourceColumn: brasil_posicao_pib
+
+		annotation SummarizationSetBy = Automatic
+
+	partition resumo_anual = m
+		mode: import
+		source =
+				let
+				    Fonte = PostgreSQL.Database(ServidorBanco, NomeBanco),
+				    Consulta = Value.NativeQuery(Fonte, "select ano, paises_com_valor, paises_no_grupo, cobertura_pct, mediana_renda_alta, mediana_renda_baixa, diferenca_renda_anos, maior_pib_pais, maior_pib_bilhoes, brasil_expectativa_vida, brasil_pib_per_capita_usd, brasil_pib_bilhoes, brasil_posicao_pib from gold.resumo_anual")
+				in
+				    Consulta
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,10 @@
+expression ServidorBanco = "127.0.0.1:5433" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 3a82db5d-9e31-5532-ba53-772bceae6020
+
+	annotation PBI_ResultType = Text
+
+expression NomeBanco = "world_bank" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: b833452f-6140-5860-bebc-a410c657204d
+
+	annotation PBI_ResultType = Text
+

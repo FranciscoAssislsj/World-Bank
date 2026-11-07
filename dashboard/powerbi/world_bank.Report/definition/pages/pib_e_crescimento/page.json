@@ -1,0 +1,105 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
+  "name": "pib_e_crescimento",
+  "displayName": "PIB e crescimento",
+  "displayOption": "FitToWidth",
+  "height": 1200,
+  "width": 1440,
+  "objects": {
+    "background": [
+      {
+        "properties": {
+          "color": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'#f2f3f5'"
+                  }
+                }
+              }
+            }
+          },
+          "transparency": {
+            "expr": {
+              "Literal": {
+                "Value": "0D"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "outspace": [
+      {
+        "properties": {
+          "color": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'#f2f3f5'"
+                  }
+                }
+              }
+            }
+          },
+          "transparency": {
+            "expr": {
+              "Literal": {
+                "Value": "0D"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "visualInteractions": [
+    {
+      "source": "filtro_ano",
+      "target": "linhas_pib",
+      "type": "NoFilter"
+    },
+    {
+      "source": "filtro_ano",
+      "target": "ranking",
+      "type": "NoFilter"
+    },
+    {
+      "source": "filtro_regiao",
+      "target": "linhas_pib",
+      "type": "NoFilter"
+    },
+    {
+      "source": "filtro_paises",
+      "target": "top_10_pib",
+      "type": "NoFilter"
+    },
+    {
+      "source": "filtro_paises",
+      "target": "ranking",
+      "type": "NoFilter"
+    },
+    {
+      "source": "filtro_paises",
+      "target": "cartao_lider",
+      "type": "NoFilter"
+    },
+    {
+      "source": "filtro_paises",
+      "target": "cartao_lider_detalhe",
+      "type": "NoFilter"
+    },
+    {
+      "source": "filtro_paises",
+      "target": "cartao_brasil_cresc",
+      "type": "NoFilter"
+    },
+    {
+      "source": "filtro_paises",
+      "target": "cartao_brasil_cresc_detalhe",
+      "type": "NoFilter"
+    }
+  ]
+}

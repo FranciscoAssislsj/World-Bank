@@ -1,0 +1,129 @@
+"""O projeto do Power BI é texto: dá para conferir suas regras sem abrir o programa."""
+
+import json
+import re
+from collections.abc import Iterator
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from world_bank.load.gold import load_views
+
+RAIZ = Path(__file__).resolve().parents[2] / "dashboard" / "powerbi"
+TABELAS = RAIZ / "world_bank.SemanticModel" / "definition" / "tables"
+RELATORIO = RAIZ / "world_bank.Report" / "definition"
+CONSULTA = re.compile(r'Value\.NativeQuery\(Fonte, "(?P<sql>[^"]+)"\)')
+COLUNA = re.compile(r"^\tcolumn (\S+)$", re.MULTILINE)
+MEDIDA = re.compile(r"^\tmeasure '([^']+)'", re.MULTILINE)
+
+
+def _modelo() -> dict[str, set[str]]:
+    """Os campos de cada tabela do modelo, colunas e medidas juntas."""
+    campos = {}
+    for arquivo in TABELAS.glob("*.tmdl"):
+        texto = arquivo.read_text(encoding="utf-8")
+        campos[arquivo.stem] = set(COLUNA.findall(texto)) | set(MEDIDA.findall(texto))
+    return campos
+
+
+def _referencias(no: Any) -> Iterator[tuple[str, str]]:
+    """Cada par (tabela, campo) citado em um arquivo do relatório."""
+    if isinstance(no, list):
+        for item in no:
+            yield from _referencias(item)
+    elif isinstance(no, dict):
+        fonte = no.get("Expression", {}) if "Property" in no else {}
+        if "Entity" in fonte.get("SourceRef", {}):
+            yield fonte["SourceRef"]["Entity"], no["Property"]
+        for valor in no.values():
+            yield from _referencias(valor)
+
+
+def _visuais() -> list[Path]:
+    return sorted(RELATORIO.glob("pages/*/visuals/*/visual.json"))
+
+
+def test_each_query_reads_only_gold_columns_that_exist() -> None:
+    colunas = {view.name: view.columns.keys() for view in load_views()}
+    consultas = 0
+    for arquivo in TABELAS.glob("*.tmdl"):
+        for achado in CONSULTA.finditer(arquivo.read_text(encoding="utf-8")):
+            consultas += 1
+            sql = achado["sql"]
+            origens = re.findall(r"\b(?:from|join)\s+([\w.]+)", sql, re.IGNORECASE)
+            assert origens == [f"gold.{arquivo.stem}"]  # só gold (D-078)
+            lista = re.search(r"select (.+?) from ", sql, re.IGNORECASE)
+            assert lista is not None
+            pedidas = {c.strip() for c in lista[1].split(",")}
+            assert pedidas <= colunas[arquivo.stem]
+
+    assert consultas == 4
+
+
+def test_model_columns_are_the_ones_each_query_returns() -> None:
+    for arquivo in TABELAS.glob("*.tmdl"):
+        texto = arquivo.read_text(encoding="utf-8")
+        achado = CONSULTA.search(texto)
+        if achado is None:
+            continue
+        lista = re.search(r"select (.+?) from ", achado["sql"], re.IGNORECASE)
+        assert lista is not None
+        assert set(COLUNA.findall(texto)) == {c.strip() for c in lista[1].split(",")}
+
+
+def test_measures_never_read_other_layers_or_invent_rules() -> None:
+    texto = (TABELAS / "Medidas.tmdl").read_text(encoding="utf-8")
+
+    # Sem conta entre colunas: o único cálculo é a troca de unidade para bilhões.
+    assert "silver" not in texto
+    assert texto.count("DIVIDE(") == 1
+    assert "DIVIDE(SUM(pais_ano[pib_usd]), 1E9)" in texto
+
+
+def test_every_field_used_by_a_visual_exists_in_the_model() -> None:
+    modelo = _modelo()
+    assert _visuais()
+
+    faltando = sorted(
+        {
+            f"{arquivo.parent.name}: {tabela}.{campo}"
+            for arquivo in _visuais()
+            for tabela, campo in _referencias(
+                json.loads(arquivo.read_text(encoding="utf-8"))
+            )
+            if campo not in modelo.get(tabela, set())
+        }
+    )
+
+    assert faltando == []
+
+
+def test_pages_have_their_declared_folder_and_visual_names() -> None:
+    paginas = json.loads((RELATORIO / "pages" / "pages.json").read_text("utf-8"))
+
+    assert paginas["pageOrder"] == ["renda_e_vida", "pib_e_crescimento"]
+    for arquivo in _visuais():
+        visual = json.loads(arquivo.read_text(encoding="utf-8"))
+        assert visual["name"] == arquivo.parent.name
+
+
+def test_interactions_point_to_visuals_of_the_same_page() -> None:
+    for nome in ("renda_e_vida", "pib_e_crescimento"):
+        pasta = RELATORIO / "pages" / nome
+        pagina = json.loads((pasta / "page.json").read_text(encoding="utf-8"))
+        existentes = {p.name for p in (pasta / "visuals").iterdir()}
+        for regra in pagina.get("visualInteractions", []):
+            assert {regra["source"], regra["target"]} <= existentes
+
+
+@pytest.mark.parametrize("segredo", ["password", "senha", "pwd=", "dashboard_leitor"])
+def test_project_has_no_credentials(segredo: str) -> None:
+    arquivos = [p for p in RAIZ.rglob("*") if p.is_file() and ".pbi" not in p.parts]
+    assert arquivos
+
+    com_segredo = [
+        p.name for p in arquivos if segredo in p.read_text(encoding="utf-8").lower()
+    ]
+
+    assert com_segredo == []

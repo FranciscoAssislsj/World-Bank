@@ -1,0 +1,91 @@
+table ranking_crescimento
+	lineageTag: 95ad2249-2a03-5697-b435-704d7bb07eb4
+
+	column pais_iso3
+		dataType: string
+		lineageTag: 146fd37c-4109-543b-8829-9c0f40c73e08
+		summarizeBy: none
+		sourceColumn: pais_iso3
+
+		annotation SummarizationSetBy = Automatic
+
+	column pais
+		dataType: string
+		lineageTag: 8a2318a9-5c13-51e5-a64b-25467465c509
+		summarizeBy: none
+		sourceColumn: pais
+
+		annotation SummarizationSetBy = Automatic
+
+	column regiao
+		dataType: string
+		lineageTag: e19156bf-901c-501f-8690-9dd660b6a6f0
+		summarizeBy: none
+		sourceColumn: regiao
+
+		annotation SummarizationSetBy = Automatic
+
+	column nivel_renda_atual
+		dataType: string
+		lineageTag: 5c4f56e0-0860-541d-8ec7-1336cbe7b4a8
+		summarizeBy: none
+		sourceColumn: nivel_renda_atual
+
+		annotation SummarizationSetBy = Automatic
+
+	column ano_inicial
+		dataType: int64
+		formatString: 0
+		lineageTag: 8fa967ec-0355-586f-a232-7b0375caad9c
+		summarizeBy: none
+		sourceColumn: ano_inicial
+
+		annotation SummarizationSetBy = Automatic
+
+	column ano_final
+		dataType: int64
+		formatString: 0
+		lineageTag: cec05642-cf5d-5d9f-acd8-3dbf4ce6659a
+		summarizeBy: none
+		sourceColumn: ano_final
+
+		annotation SummarizationSetBy = Automatic
+
+	column crescimento_pib_real_pct
+		dataType: double
+		formatString: #,0.0
+		lineageTag: 2af325ec-a37d-5026-a762-cfa60168281c
+		summarizeBy: none
+		sourceColumn: crescimento_pib_real_pct
+
+		annotation SummarizationSetBy = Automatic
+
+	column posicao_pib_mundo
+		dataType: int64
+		formatString: 0\º
+		lineageTag: e0148086-67f5-59f2-b12a-edac67046111
+		summarizeBy: none
+		sourceColumn: posicao_pib_mundo
+
+		annotation SummarizationSetBy = Automatic
+
+	column posicao_pib_regiao
+		dataType: int64
+		formatString: 0\º
+		lineageTag: bcf08abe-3c46-5bf7-9fb1-77a76d3c5b18
+		summarizeBy: none
+		sourceColumn: posicao_pib_regiao
+
+		annotation SummarizationSetBy = Automatic
+
+	partition ranking_crescimento = m
+		mode: import
+		source =
+				let
+				    Fonte = PostgreSQL.Database(ServidorBanco, NomeBanco),
+				    Consulta = Value.NativeQuery(Fonte, "select pais_iso3, pais, regiao, nivel_renda_atual, ano_inicial, ano_final, crescimento_pib_real_pct, posicao_pib_mundo, posicao_pib_regiao from gold.ranking_crescimento")
+				in
+				    Consulta
+
+	annotation PBI_ResultType = Table
+
