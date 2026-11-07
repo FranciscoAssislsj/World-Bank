@@ -174,4 +174,3 @@ O projeto foi feito com ajuda de uma IA (Claude), e cada erro ficou registrado e
 - **Leu só a contagem de testes:** registrou "42 passed" sem ver que o comando terminava com erro e que 26 testes se pulavam com o banco vazio. Agora o CI não aceita teste pulado ([D-072](docs/data-decisions.md)).
 - **Passou um comando sem testar:** o pacote indicado para o MCP do Postgres não funcionava em nenhuma versão disponível. O projeto passou a usar a imagem Docker.
 - **Não conferiu o ambiente:** usou a porta 5432, já ocupada por outro PostgreSQL, e o erro de senha parecia ser outro problema. O banco foi para a 5433.
-- **Expôs uma senha na própria saída:** ao inspecionar o `.env`, escondeu só as chaves com `PASSWORD` no nome, e a senha local dentro da `DATABASE_URL` apareceu. Ela não foi para o repositório, e a IA avisou o responsável.
