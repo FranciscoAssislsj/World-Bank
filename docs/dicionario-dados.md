@@ -162,7 +162,13 @@ Como PIB per capita, expectativa de vida, eletricidade e internet se relacionam 
 | `tem_valor_atipico` | verdadeiro/falso | `boolean` | sim |  | true quando algum valor desta linha foi apontado como estranho; o motivo diz qual (D-062). |
 | `motivo_atipico` | texto | `text` | sim |  | Qual valor foi apontado e por quê; NULL se nenhum foi (D-062). |
 | `grupo_grafico` | texto | `text` | sim |  | Cor do país nos gráficos: Brasil, Valor atípico ou a faixa de renda do ano (D-084, D-085). |
-| `grupo_grafico_ordem` | número inteiro | `integer` | sim |  | Ordem do grupo no gráfico: da menor renda à maior, com o Brasil por último, para ficar à frente das outras bolhas (D-084, D-085). |
+| `grupo_grafico_ordem` | número inteiro | `integer` | sim |  | Ordem do grupo na legenda: da menor renda à maior, com o Brasil por último (D-084, D-085). |
+| `nivel_renda_rotulo` | texto | `text` | sim |  | Nível de renda para a legenda; Não classificado quando não há (D-097). |
+| `e_brasil` | verdadeiro/falso | `boolean` | sim |  | true na linha do Brasil, para o destaque dos dashboards (D-084, D-097). |
+| `pib_bilhoes_usd` | número decimal | `numeric` | sim |  | PIB em bilhões de dólares correntes, a unidade dos gráficos (D-097). |
+| `posicao_pib_mundo` | número inteiro | `bigint` | sim |  | Posição do PIB entre os países no ano, do maior para o menor; NULL sem PIB (D-097). |
+| `posicao_pib_regiao` | número inteiro | `bigint` | sim |  | Posição do PIB entre os países da região no ano; NULL sem PIB (D-097). |
+| `rotulo_dispersao` | verdadeiro/falso | `boolean` | sim |  | true nos 6 países mais populosos do ano com PIB per capita e expectativa de vida, os que ganham nome no gráfico (D-097). |
 
 ### `gold.ponte_indicador_topico`
 
@@ -195,6 +201,7 @@ Quais países mais cresceram na última década, em PIB real e em população ur
 | `crescimento_populacao_urbana_pct` | número decimal | `numeric` | sim |  | Variação da população urbana na janela, em %. |
 | `posicao_populacao_urbana_regiao` | número inteiro | `bigint` | sim |  | Posição na região; NULL sem crescimento. |
 | `posicao_populacao_urbana_mundo` | número inteiro | `bigint` | sim |  | Posição no mundo; NULL sem crescimento. |
+| `e_brasil` | verdadeiro/falso | `boolean` | sim |  | true na linha do Brasil, para o destaque dos dashboards (D-084, D-097). |
 
 ### `gold.reconciliacao_agregados`
 

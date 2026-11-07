@@ -113,12 +113,47 @@ table pais_ano
 
 		annotation SummarizationSetBy = Automatic
 
+	column e_brasil
+		dataType: boolean
+		lineageTag: fb614bbf-8a5c-4fbf-b817-1229e9c1f243
+		summarizeBy: none
+		sourceColumn: e_brasil
+
+		annotation SummarizationSetBy = Automatic
+
+	column pib_bilhoes_usd
+		dataType: double
+		formatString: #,0
+		lineageTag: f163f987-9253-430d-8923-46b8a19ce571
+		summarizeBy: none
+		sourceColumn: pib_bilhoes_usd
+
+		annotation SummarizationSetBy = Automatic
+
+	column posicao_pib_mundo
+		dataType: int64
+		formatString: 0
+		lineageTag: 78aacca1-9f6b-4038-9035-85e77cffb116
+		summarizeBy: none
+		sourceColumn: posicao_pib_mundo
+
+		annotation SummarizationSetBy = Automatic
+
+	column posicao_pib_regiao
+		dataType: int64
+		formatString: 0
+		lineageTag: 633cbac6-47af-43e6-9128-ddfd6d79282d
+		summarizeBy: none
+		sourceColumn: posicao_pib_regiao
+
+		annotation SummarizationSetBy = Automatic
+
 	partition pais_ano = m
 		mode: import
 		source =
 				let
 				    Fonte = PostgreSQL.Database(ServidorBanco, NomeBanco),
-				    Consulta = Value.NativeQuery(Fonte, "select pais_iso3, pais, ano, regiao, nivel_renda, populacao, expectativa_vida, pib_usd, pib_per_capita_usd, tem_valor_atipico, motivo_atipico, grupo_grafico, grupo_grafico_ordem from gold.pais_ano")
+				    Consulta = Value.NativeQuery(Fonte, "select pais_iso3, pais, ano, regiao, nivel_renda, populacao, expectativa_vida, pib_usd, pib_per_capita_usd, tem_valor_atipico, motivo_atipico, grupo_grafico, grupo_grafico_ordem, e_brasil, pib_bilhoes_usd, posicao_pib_mundo, posicao_pib_regiao from gold.pais_ano")
 				in
 				    Consulta
 

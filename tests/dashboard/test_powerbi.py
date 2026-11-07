@@ -75,10 +75,23 @@ def test_model_columns_are_the_ones_each_query_returns() -> None:
 def test_measures_never_read_other_layers_or_invent_rules() -> None:
     texto = (TABELAS / "Medidas.tmdl").read_text(encoding="utf-8")
 
-    # Sem conta entre colunas: o único cálculo é a troca de unidade para bilhões.
+    # As medidas só escolhem um valor que a gold já traz e o escrevem (D-097).
     assert "silver" not in texto
-    assert texto.count("DIVIDE(") == 1
-    assert "DIVIDE(SUM(pais_ano[pib_usd]), 1E9)" in texto
+    formulas = re.sub(r'"[^"]*"', '""', texto)  # sem os textos entre aspas
+    formulas = re.sub(r"^\t+(lineageTag|formatString):.*$", "", formulas, flags=re.M)
+    assert not re.search(r"[-+*/]", formulas), "operação aritmética"
+    proibidas = (
+        r"\b(SUM|SUMX|AVERAGE|COUNT|COUNTROWS|MIN|MINX|MAX|MAXX|DIVIDE|TOPN|RANKX)\("
+    )
+    assert not re.search(proibidas, formulas)
+
+
+def test_visuals_never_summarize_or_rank() -> None:
+    """Sem soma automática nem filtro Top N: o gráfico mostra o valor da gold."""
+    for arquivo in _visuais():
+        texto = arquivo.read_text(encoding="utf-8")
+        assert '"Aggregation"' not in texto, arquivo.parent.name
+        assert '"TopN"' not in texto, arquivo.parent.name
 
 
 def test_every_field_used_by_a_visual_exists_in_the_model() -> None:

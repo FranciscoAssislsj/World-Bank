@@ -54,22 +54,17 @@
           "projections": [
             {
               "field": {
-                "Aggregation": {
+                "Measure": {
                   "Expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "resumo_renda_regiao"
-                        }
-                      },
-                      "Property": "mediana"
+                    "SourceRef": {
+                      "Entity": "Medidas"
                     }
                   },
-                  "Function": 0
+                  "Property": "Mediana da expectativa de vida"
                 }
               },
-              "queryRef": "Sum(resumo_renda_regiao.mediana)",
-              "nativeQueryRef": "Sum of mediana",
+              "queryRef": "Medidas.Mediana da expectativa de vida",
+              "nativeQueryRef": "Mediana da expectativa de vida",
               "displayName": "Mediana, em anos"
             }
           ]

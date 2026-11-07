@@ -9,9 +9,9 @@ Esta página reúne as provas da entrega, conferidas em 2026-11-07. Cada linha d
 | Fonte pública e licença | [World Bank API v2](data-sources.md), CC BY 4.0 no README | leitura do README |
 | Pelo menos 2 tabelas com JOIN | `gold.pais_ano` e `gold.ranking_crescimento` juntam fatos e dimensões | [`20_pais_ano.sql`](https://github.com/FranciscoAssislsj/World-Bank/blob/main/sql/gold/20_pais_ano.sql) e consulta ao banco |
 | 3 camadas separadas, com a bruta intacta | schemas `bronze`, `silver` e `gold`; gatilhos impedem alterar a bronze | migrações e busca no código: nenhum `UPDATE` ou `DELETE` na bronze |
-| Testes com dado inventado, sem abrir o banco | `tests/`, fora de `tests/integration/` | 431 testes unitários na versão final, sem rede e sem banco |
+| Testes com dado inventado, sem abrir o banco | `tests/`, fora de `tests/integration/` | 446 testes unitários na versão final, sem rede e sem banco |
 | Repositório público, um commit por etapa | GitHub, merges sem squash | `gh repo view` e `git log` |
-| Dashboards lendo só a gold | Streamlit e Power BI ([D-078](data-decisions.md)) | testes de consulta e permissões do usuário `dashboard_leitor` |
+| Dashboards lendo só a gold, sem nenhum cálculo na tela | Streamlit e Power BI ([D-078 e D-097](data-decisions.md)) | permissões do `dashboard_leitor` e testes que recusam conta, agregação, soma automática e Top N; cada teste foi conferido com uma conta plantada de propósito |
 | Power BI no repositório | projeto `.pbip`, PDF e imagens das telas ([D-094](data-decisions.md)) | teste do projeto e [página de dashboards](dashboards.md) |
 | Seção "Onde a IA errou" | README e [registro completo](ai-log.md) | leitura |
 | Um `.sql` por view da gold, com cabeçalho | `sql/gold/`, 16 arquivos e 16 tabelas no banco | teste do cabeçalho e impressão digital das 16 tabelas |

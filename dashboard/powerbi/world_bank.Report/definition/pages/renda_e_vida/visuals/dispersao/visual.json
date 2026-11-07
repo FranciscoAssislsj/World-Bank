@@ -54,22 +54,17 @@
           "projections": [
             {
               "field": {
-                "Aggregation": {
+                "Measure": {
                   "Expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "pais_ano"
-                        }
-                      },
-                      "Property": "pib_per_capita_usd"
+                    "SourceRef": {
+                      "Entity": "Medidas"
                     }
                   },
-                  "Function": 0
+                  "Property": "PIB per capita, em US$"
                 }
               },
-              "queryRef": "Sum(pais_ano.pib_per_capita_usd)",
-              "nativeQueryRef": "Sum of pib_per_capita_usd",
+              "queryRef": "Medidas.PIB per capita, em US$",
+              "nativeQueryRef": "PIB per capita, em US$",
               "active": true,
               "displayName": "PIB per capita, em US$"
             }
@@ -79,22 +74,17 @@
           "projections": [
             {
               "field": {
-                "Aggregation": {
+                "Measure": {
                   "Expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "pais_ano"
-                        }
-                      },
-                      "Property": "expectativa_vida"
+                    "SourceRef": {
+                      "Entity": "Medidas"
                     }
                   },
-                  "Function": 0
+                  "Property": "Expectativa de vida, em anos"
                 }
               },
-              "queryRef": "Sum(pais_ano.expectativa_vida)",
-              "nativeQueryRef": "Sum of expectativa_vida",
+              "queryRef": "Medidas.Expectativa de vida, em anos",
+              "nativeQueryRef": "Expectativa de vida, em anos",
               "active": true,
               "displayName": "Expectativa de vida, em anos"
             }
@@ -104,22 +94,17 @@
           "projections": [
             {
               "field": {
-                "Aggregation": {
+                "Measure": {
                   "Expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "pais_ano"
-                        }
-                      },
-                      "Property": "populacao"
+                    "SourceRef": {
+                      "Entity": "Medidas"
                     }
                   },
-                  "Function": 0
+                  "Property": "População"
                 }
               },
-              "queryRef": "Sum(pais_ano.populacao)",
-              "nativeQueryRef": "Sum of populacao",
+              "queryRef": "Medidas.População",
+              "nativeQueryRef": "População",
               "displayName": "População"
             }
           ]
@@ -128,42 +113,32 @@
           "projections": [
             {
               "field": {
-                "Aggregation": {
+                "Measure": {
                   "Expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "pais_ano"
-                        }
-                      },
-                      "Property": "nivel_renda"
+                    "SourceRef": {
+                      "Entity": "Medidas"
                     }
                   },
-                  "Function": 3
+                  "Property": "Faixa de renda"
                 }
               },
-              "queryRef": "Min(pais_ano.nivel_renda)",
-              "nativeQueryRef": "Min of nivel_renda",
+              "queryRef": "Medidas.Faixa de renda",
+              "nativeQueryRef": "Faixa de renda",
               "displayName": "Faixa de renda"
             },
             {
               "field": {
-                "Aggregation": {
+                "Measure": {
                   "Expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "pais_ano"
-                        }
-                      },
-                      "Property": "motivo_atipico"
+                    "SourceRef": {
+                      "Entity": "Medidas"
                     }
                   },
-                  "Function": 3
+                  "Property": "Valor atípico"
                 }
               },
-              "queryRef": "Min(pais_ano.motivo_atipico)",
-              "nativeQueryRef": "Min of motivo_atipico",
+              "queryRef": "Medidas.Valor atípico",
+              "nativeQueryRef": "Valor atípico",
               "displayName": "Valor atípico"
             }
           ]

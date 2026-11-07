@@ -148,7 +148,7 @@ O [CI](.github/workflows/ci.yml) roda essas conferências em uma máquina limpa,
 
 ## Dashboards
 
-O layout foi desenhado antes, no Figma ([imagens](docs/dashboard/layout/)), e as telas atuais estão em [docs/dashboard/streamlit](docs/dashboard/streamlit/). Os dashboards leem só a gold, com um usuário do banco que não consegue ler mais nada ([D-078 e D-079](docs/data-decisions.md)).
+O layout foi desenhado antes, no Figma ([imagens](docs/dashboard/layout/)), e as telas atuais estão em [docs/dashboard/streamlit](docs/dashboard/streamlit/). Os dashboards leem só a gold, sem nenhuma conta na tela, com um usuário do banco que não consegue ler mais nada ([D-078, D-079 e D-097](docs/data-decisions.md)).
 
 ```bash
 uv run python -m world_bank migrate   # define a senha do usuário dos dashboards, vinda do .env

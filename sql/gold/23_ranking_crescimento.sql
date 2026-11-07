@@ -20,6 +20,7 @@
 -- Coluna crescimento_populacao_urbana_pct: Variação da população urbana na janela, em %.
 -- Coluna posicao_populacao_urbana_regiao: Posição na região; NULL sem crescimento.
 -- Coluna posicao_populacao_urbana_mundo: Posição no mundo; NULL sem crescimento.
+-- Coluna e_brasil: true na linha do Brasil, para o destaque dos dashboards (D-084, D-097).
 with janela as (
     select max(f.ano) - 10 as ano_inicial, max(f.ano) as ano_final
     from gold.fato_observacao as f
@@ -113,5 +114,6 @@ select
             partition by crescimento_populacao_urbana_pct is null
             order by crescimento_populacao_urbana_pct desc
         )
-    end as posicao_populacao_urbana_mundo
+    end as posicao_populacao_urbana_mundo,
+    pais_iso3 = 'BRA' as e_brasil
 from calculo;
