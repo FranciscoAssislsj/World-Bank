@@ -14,11 +14,13 @@ A API do World Bank não pede cadastro nem chave.
 ## Rodar do zero
 
 ```bash
-uv sync                      # cria a .venv e instala as dependências
-cp .env.example .env         # no Prompt de Comando do Windows: copy .env.example .env
-docker compose up -d --wait  # sobe o PostgreSQL em 127.0.0.1:5433
+uv sync
+cp .env.example .env
+docker compose up -d --wait
 uv run python -m world_bank run-all
 ```
+
+Os comandos instalam as dependências, criam o `.env`, sobem o banco e rodam o pipeline. No Prompt de Comando do Windows, troque `cp` por `copy`.
 
 O `run-all` faz todo o caminho, da criação das tabelas até a gold, e para na primeira falha. Para rodar uma etapa de cada vez, veja [Pipelines](pipelines.md).
 
@@ -29,15 +31,15 @@ Antes de usar em algo além da sua máquina, troque as senhas do `.env`. Os valo
 Se o comando terminou sem erro, a gold está pronta. Para ver os dados, abra os [dashboards](dashboards.md) ou consulte o banco:
 
 ```bash
-docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "select count(*) from gold.fato_observacao"'
+docker compose exec postgres psql -U wb -d world_bank -c "select count(*) from gold.fato_observacao"
 ```
+
+Se mudou o usuário ou o nome do banco no `.env`, troque `wb` e `world_bank`.
 
 ## Problemas comuns
 
 | O que aparece | O que fazer |
 |---|---|
-| Falha de senha para o usuário `wb` | Confira se a conexão usa a porta **5433**. A 5432 costuma ser de outro PostgreSQL instalado no computador. |
-| A conexão fica parada no Windows | Use `127.0.0.1` no endereço do banco, e não `localhost`. |
-| O terminal continua usando um valor antigo do `.env` | Abra um terminal novo. O do VS Code pode guardar o valor anterior. |
+| Falha de senha, porta ocupada ou conexão parada | Confira se o `.env` usa o mesmo endereço e a mesma porta do `.env.example`. Se outro programa já ocupar a porta, mude-a no `docker-compose.yml` e no `.env`. |
 | Erro `pipe/docker_engine` no `docker compose` | Abra o Docker Desktop e espere o motor ligar. |
 | O pipeline falha ao chamar a API | A API do World Bank pode estar fora do ar. O cliente já repete os erros temporários, então espere um pouco e rode de novo. |

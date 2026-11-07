@@ -12,9 +12,11 @@ As telas são contadas a partir do Brasil: laranja é o Brasil, cinza é context
 ## Streamlit
 
 ```bash
-uv run python -m world_bank migrate   # define a senha do usuário dos dashboards, vinda do .env
-uv run --group dashboard streamlit run dashboard/app.py   # abre em http://localhost:8501
+uv run python -m world_bank migrate
+uv run --group dashboard streamlit run dashboard/app.py
 ```
+
+O `migrate` define a senha do usuário dos dashboards, vinda do `.env`. O segundo comando abre o dashboard no navegador.
 
 ![Tela de renda e qualidade de vida no Streamlit](dashboard/streamlit/1-renda-e-qualidade-de-vida.png)
 
@@ -41,14 +43,9 @@ O [relatório em PDF](dashboard/world_bank_powerbi.pdf) mostra as primeiras linh
 
 O desenho veio antes do código, no Figma ([D-077](data-decisions.md)), e o fundo das páginas do Power BI também ([D-089](data-decisions.md)).
 
-O primeiro desenho tinha 4 telas e um painel de valores atípicos. Depois, o projeto ficou com 2 telas, escolhidas para facilitar a leitura. As imagens guardam os dois momentos:
+O primeiro desenho tinha 4 telas e um painel de valores atípicos. Depois, o projeto ficou com 2 telas, escolhidas para facilitar a leitura. As imagens do desenho inicial seguem no histórico do git.
 
 | Imagem | O que é |
 |---|---|
-| [Visão geral](dashboard/layout/1-visao-geral.png) | desenho inicial |
-| [PIB × expectativa de vida](dashboard/layout/2-pib-expectativa-vida.png) | desenho inicial |
-| [Ranking de crescimento](dashboard/layout/3-ranking-crescimento.png) | desenho inicial |
-| [Reconciliação](dashboard/layout/4-reconciliacao.png) | desenho inicial |
-| [Painel de valores atípicos](dashboard/layout/5-painel-valores-atipicos.png) | desenho inicial |
 | [Fundo: renda e vida](dashboard/layout/fundo_renda_e_vida.png) | fundo atual do Power BI |
 | [Fundo: PIB e crescimento](dashboard/layout/fundo_pib_e_crescimento.png) | fundo atual do Power BI |
