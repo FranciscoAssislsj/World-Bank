@@ -163,3 +163,15 @@ uv run --group dashboard streamlit run dashboard/app.py   # abre em http://local
 | PIB e crescimento | PIB por país ao longo do tempo, os 10 maiores PIBs e o ranking de crescimento dos últimos 10 anos |
 
 O relatório do Power BI está em [`dashboard/powerbi/`](dashboard/powerbi/), como projeto `.pbip` ([D-086](docs/data-decisions.md)), e exportado em [PDF](docs/dashboard/world_bank_powerbi.pdf). Com o banco ligado, abra `dashboard/powerbi/world_bank.pbip` no Power BI Desktop e clique em **Atualizar**. A credencial e os demais passos estão em [Dashboards](docs/dashboards.md).
+
+## Onde a IA errou
+
+O projeto foi feito com ajuda de uma IA (Claude), e cada erro ficou registrado em [docs/ai-log.md](docs/ai-log.md). Estes mudaram o projeto:
+
+- **Seguiu o plano sem questionar:** pôs o modelo estrela na silver, sem motivo escrito, por 6 fases. O responsável perguntou por que as dimensões não estavam na gold, e a estrela foi movida ([D-087](docs/data-decisions.md)).
+- **Decidiu sobre o dado sem medir:** primeiro recomendou manter os valores atípicos na média, depois propôs remover os 29. O responsável pediu a medição e a análise de cada caso, que mostraram que parte dos valores era real ([D-062](docs/data-decisions.md)).
+- **Confiou em teste que não testava tudo:** considerou o Streamlit pronto porque os testes passavam, mas o ranking quebrava no navegador. Agora as telas também são conferidas em um navegador.
+- **Leu só a contagem de testes:** registrou "42 passed" sem ver que o comando terminava com erro e que 26 testes se pulavam com o banco vazio. Agora o CI não aceita teste pulado ([D-072](docs/data-decisions.md)).
+- **Passou um comando sem testar:** o pacote indicado para o MCP do Postgres não funcionava em nenhuma versão disponível. O projeto passou a usar a imagem Docker.
+- **Não conferiu o ambiente:** usou a porta 5432, já ocupada por outro PostgreSQL, e o erro de senha parecia ser outro problema. O banco foi para a 5433.
+- **Expôs uma senha na própria saída:** ao inspecionar o `.env`, escondeu só as chaves com `PASSWORD` no nome, e a senha local dentro da `DATABASE_URL` apareceu. Ela não foi para o repositório, e a IA avisou o responsável.
