@@ -52,7 +52,7 @@ Um clone limpo, sem `.env`, sem `.venv` e com um banco vazio, seguiu os comandos
 
 **Limites:**
 
-- Depois do teste, mudaram textos da documentação, a descrição do `pyproject.toml` e a dependência `pandas`, que nada usava; os comandos do README não mudaram, e todos os testes rodaram de novo. Os testes da documentação cresceram com essas páginas, de 429 para 431.
+- Depois do teste, mudaram textos da documentação, a descrição do `pyproject.toml` e a dependência `pandas`, que nada usava; os comandos do README não mudaram, e todos os testes rodaram de novo. Depois veio a regra de nenhuma conta na tela ([D-097](data-decisions.md)), com testes próprios: os testes unitários passaram de 429 para 446, todos passando, e o CI ficou verde na `main`.
 - O teste foi na mesma máquina Windows, com Docker e `uv` já instalados. O [CI](development.md#ci) cobre uma máquina Linux limpa.
 - O Power BI Desktop não roda de forma automática. O projeto tem um teste próprio, e o responsável abriu o relatório no Desktop e atualizou os dados em 2026-11-07, sem erro.
 - Quem fez o teste foi a própria IA, que conhece o projeto. Uma pessoa de fora ainda pode encontrar outra dificuldade.
